@@ -59,6 +59,11 @@ FruitType fruit_get_random_fruitType() {
     return (FruitType)(rand() % MAX_RANDOM_FRUIT_TYPE);
 }
 void fruit_upgrade(Fruit *f) {
+    /* 수박이 마지막 단계라 더 올릴 곳이 없다 */
+    if (f->type >= FRUIT_TYPE_WATERMELON) {
+        return;
+    }
+
     f->type++;
     f->r = FRUITS_INFOS[f->type].r * FRUIT_PIXELS_PER_UNIT;
 }

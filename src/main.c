@@ -49,6 +49,7 @@ int main(int argc, char *argv[]) {
         frame_clock_tick(&clock);
         while (frame_clock_fixed_step(&clock, 1.0 / 120.0)) {
             collider_step(&state, bounds, 1.0 / 120.0);
+            state_merge_touching(&state);
         }
         draw(renderer, &state, &held);
     }

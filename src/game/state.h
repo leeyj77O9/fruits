@@ -21,4 +21,5 @@ bool   state_remove_fruit(PlayerState* state, u16 id);
 size_t state_index_of_fruit(PlayerState* state, FruitType fruitType);
 size_t state_index_of_fruit_by_id(PlayerState* state, u16 id);
 void   state_merge_fruit(PlayerState* state, u16 id1, u16 id2);
+bool   state_merge_touching(PlayerState* state);
 bool   state_fruit_is_full(PlayerState* state);
