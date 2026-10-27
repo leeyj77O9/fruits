@@ -2,10 +2,9 @@
 #include <SDL3/SDL.h>
 
 void frame_clock_init(FrameClock *c) {
-    u64 now = SDL_GetPerformanceCounter();
-    c->freq = now;
-    c->last = now;
-    c->acc = 0.0f;
+    c->freq = SDL_GetPerformanceFrequency();
+    c->last = SDL_GetPerformanceCounter();
+    c->acc  = 0.0;
 }
 
 double frame_clock_tick(FrameClock *c) {

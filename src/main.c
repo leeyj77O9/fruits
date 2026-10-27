@@ -27,10 +27,13 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    SDL_SetRenderVSync(renderer, 1);
+
     bool running = true;
     SDL_Event event;
     PlayerState state;
     FrameClock clock;
+    rect bounds = {0, 0, 800, 600};
 
     state_init(&state);
     frame_clock_init(&clock);
@@ -39,6 +42,7 @@ int main(int argc, char *argv[]) {
 
     while (running) {
         handle_event(&event, &running);
+        frame_clock_tick(&clock);
         while (frame_clock_fixed_step(&clock, 1.0 / 120.0)) {
             collider_step(&state, bounds, 1.0 / 120.0);
         }
@@ -64,8 +68,8 @@ int close(SDL_Renderer *renderer, SDL_Window *window) {
 }
 void handle_event(SDL_Event *event, bool *running) {
     while (SDL_PollEvent(event)) {
-            if (event->type == SDL_EVENT_QUIT) {
-                running = false;
-            } 
-        } 
+        if (event->type == SDL_EVENT_QUIT) {
+            *running = false;
+        }
+    }
 }

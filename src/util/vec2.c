@@ -1,4 +1,5 @@
 #include "vec2.h"
+#include <math.h>
 
 vec2 vec2_zero() {
     return (vec2){0.0f, 0.0f};
@@ -12,6 +13,21 @@ vec2 vec2_sub(vec2 a, vec2 b) {
 vec2 vec2_scale(vec2 v, float s) {
     return (vec2){v.x * s, v.y * s};
 }   
+
+float vec2_dot(vec2 a, vec2 b) {
+    return (a.x * b.x) + (a.y * b.y);
+}
+float vec2_length_sq(vec2 v) {
+    return vec2_dot(v, v);
+}
+vec2 vec2_normalize(vec2 v) {
+    float length_sq = vec2_length_sq(v);
+
+    if (length_sq == 0.0f) {
+        return vec2_zero();
+    } 
+    return vec2_scale(v, 1.0f / sqrtf(length_sq));
+}
 
 int vec2_compare(vec2 a, vec2 b) {
     if (a.x < b.x) return -1;

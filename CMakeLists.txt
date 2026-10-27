@@ -17,8 +17,9 @@ add_executable(fruits
     src/util/type.c
     src/util/rgba.c
     src/game/renderer.c
-    src/game/time.c
-    src/util/rect.h
+    src/game/frame_clock.c
+    src/game/collider.c
+    src/util/rect.c
 )
 
 target_link_libraries(fruits PRIVATE SDL3::SDL3)
