@@ -3,8 +3,8 @@
 
 const float GRAVITY = 2000.0f;
 const float RESTITUTION = 0.15f;
-const float FLOOR_FRICTION = 0.85f;
-const float PAIR_FRICTION = 0.3f;
+const float FLOOR_FRICTION = 0.98f;
+const float PAIR_FRICTION = 0.22f;
 const float POSITION_SLOP = 0.5f;
 
 /* 이 속도보다 느린 충격은 튕기지 않게 해서 더미가 영원히 떨리는 것을 막는다 */
@@ -12,8 +12,8 @@ static const float RESTITUTION_SPEED_THRESHOLD = 100.0f;
 /* 한 번에 겹침을 100% 풀면 튀어오르므로 일부만 보정한다 */
 static const float CORRECTION_PERCENT = 0.6f;
 /* 이 속도 이하로 이만큼 연속 유지되면 정지 상태로 본다 */
-static const float SLEEP_SPEED = 40.0f;
-static const u16 SLEEP_FRAMES = 30;
+static const float SLEEP_SPEED = 25.0f;
+static const u16 SLEEP_FRAMES = 35;
 /* 정지해 있는 과일을 깨우는 충격 속도 */
 static const float WAKE_SPEED = 50.0f;
 
