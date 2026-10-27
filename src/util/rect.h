@@ -2,8 +2,8 @@
 #include "type.h"
 
 typedef struct rect {
-    u16 left;
-    u16 top; 
-    u16 right; 
-    u16 bottom;
+    f32 left;
+    f32 top; 
+    f32 right; 
+    f32 bottom;
 } rect;

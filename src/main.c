@@ -38,7 +38,9 @@ int main(int argc, char *argv[]) {
     state_init(&state);
     frame_clock_init(&clock);
 
-    state_add_fruit(&state, (vec2){400, 100}, FRUIT_TYPE_APPLE);
+    int c = 20;
+    while (c--) 
+        state_add_fruit(&state, (vec2){400, 100}, FRUIT_TYPE_APPLE);
 
     while (running) {
         handle_event(&event, &running);
