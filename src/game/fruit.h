@@ -1,0 +1,52 @@
+#pragma once
+
+#include "../util/vec2.h"
+#include "../util/type.h"
+#include "../util/rgba.h"
+#include <stdbool.h>
+
+typedef enum FruitType {
+   FRUIT_TPYE_GRAPE,
+   FRUIT_TYPE_STRAWBERRY,
+   FRUIT_TYPE_LEMON,
+   FRUIT_TYPE_APPLE,
+   FRUIT_TYPE_ORANGE,
+   FRUIT_TYPE_PEAR,
+   FRUIT_TYPE_PEACH,
+   FRUIT_TYPE_KIWI,
+   FRUIT_TYPE_MELON,
+   FRUIT_TYPE_WATERMELON,
+} FruitType;
+
+typedef struct Fruit {
+    u16 id;
+    vec2 pos;
+    float r;
+    FruitType type;
+} Fruit;
+
+typedef struct FruitInfo {
+    const char* name;
+    const float r;
+    const rgba rgba;
+} FruitInfo;
+
+extern const char* const FRUIT_TYPE_NAMES[];
+extern const float FRUIT_RADIUSES[];
+
+extern const FruitInfo FRUITS_INFOS[];
+extern const int MAX_RANDOM_FRUIT_TYPE;
+
+Fruit* fruit_create(vec2 pos, FruitType type);
+Fruit* fruit_clone(Fruit* f);
+
+bool fruit_equals(Fruit* a, Fruit* b);
+bool fruit_equals_type(Fruit* a, FruitType type);
+bool fruit_equals_id(Fruit* a, u16 id);
+bool fruit_can_combine(Fruit* a, Fruit* b);
+
+const char* get_fruit_name(FruitType type);
+
+FruitType get_random_fruitType();
+
+void fruit_upgrade(Fruit* f);

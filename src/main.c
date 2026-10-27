@@ -1,37 +1,13 @@
+#include "game/fruit.h"
+#include "game/state.h"
 #include <SDL3/SDL.h>
 #include <stdbool.h>
-#include <math.h>
+#include <stddef.h>
+#include <stdio.h>
 
-typedef struct {
-    float x;
-    float y;
-} vector2_t;
-
-typedef struct {
-    vector2_t position;
-    float_t radius;
-} fruit_t;
-
-void draw_fruit(SDL_Renderer *renderer, fruit_t *fruit) {
-    int POINTS = 20000;
-    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-    SDL_FPoint points[POINTS];
-    int count = 0;
-
-    for (float_t dx = -fruit->radius; dx < fruit->radius; dx += 1.0f) {
-        for (float_t dy = -fruit->radius; dy < fruit->radius; dy += 1.0f) {
-            if ((dx*dx + dy*dy) <= (fruit->radius * fruit->radius)) {
-                points[count].x = fruit->position.x + dx;
-                points[count].y = fruit->position.y + dy;
-                count++;
-            }
-            if (count >= POINTS) {
-                break;
-            }
-        }
-    }
-    SDL_RenderPoints(renderer, points, count);
-}
+void render(SDL_Renderer *renderer, PlayerState *state);
+void render_score(SDL_Renderer *renderer, u64 score);
+void render_fruit(SDL_Renderer *rebderer, Fruit* fruit);
 
 int main(int argc, char *argv[]) {
     if (!SDL_Init(SDL_INIT_VIDEO)) {
@@ -50,44 +26,22 @@ int main(int argc, char *argv[]) {
 
     bool running = true;
     SDL_Event event;
+    PlayerState state;
+    state_init(&state);
 
-    fruit_t fruit = {
-        .position = {400, 100},
-        .radius = 10
-    };
-    bool is_dropping = false;
+    state_add_fruit(&state, (vec2){100, 200}, FRUIT_TYPE_APPLE);
 
     while (running) {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_EVENT_QUIT) {
                 running = false;
-            } else if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
-                is_dropping = true;
-            } else if (event.type == SDL_EVENT_MOUSE_MOTION) {
-                if (!is_dropping) {
-                    fruit.position.x = event.motion.x;
-                }
-                
-                if (fruit.position.x + fruit.radius > 800) {
-                    fruit.position.x = 800 - fruit.radius;
-                } else if (fruit.position.x - fruit.radius < 0) {
-                    fruit.position.x = fruit.radius;
-                }
-            }
-        }
-
-        if (is_dropping) {
-            fruit.position.y += 0.3; 
-            if (fruit.position.y + fruit.radius > 600) {
-                fruit.position.y = 600 - fruit.radius;
-                is_dropping = false; 
-            }
-        }
+            } 
+        } 
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
-        draw_fruit(renderer, &fruit);
+        render(renderer, &state);
 
         SDL_RenderPresent(renderer);
     }
@@ -96,4 +50,29 @@ int main(int argc, char *argv[]) {
     SDL_DestroyWindow(window);
     SDL_Quit();
     return 0;
+}
+
+void render(SDL_Renderer *rederer, PlayerState* state) {
+    render_score(rederer, state->score);
+    
+    for (size_t i = 0; i < state->fruitsCount; ++i) {
+        render_fruit(rederer, &state->fruits[i]);
+        printf("%d: fruit rendered", state->fruits[i].id);
+    }
+}
+
+void render_score(SDL_Renderer *renderer, u64 score) {
+
+}
+
+void render_fruit(SDL_Renderer *renderer, Fruit *fruit) {
+    float r = fruit->r;
+    SDL_SetRenderDrawColor(renderer, Uint8 r, Uint8 g, Uint8 b, Uint8 a)
+    for (float dx = -r; dx < r; dx += 1.0f) {
+        for (float dy = -r; dy < r; dy += 1.0f) {
+            if ((dx * dx) + (dy * dy) <= r * r) {
+                SDL_RenderPoint(renderer, fruit->pos.x + dx, fruit->pos.y + dy);
+            }
+        }
+    }
 }
