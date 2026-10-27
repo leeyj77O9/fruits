@@ -9,25 +9,34 @@
 #include "util/rect.h"
 
 enum {
-    GAME_WIDTH = 800,
-    GAME_HEIGHT = 600,
+    GAME_WIDTH = 600,
+    GAME_HEIGHT = 800,
 };
 
 #define GAME_DROP_LINE_Y 100.0f
 #define GAME_PHYSICS_STEP (1.0 / 120.0)
 #define GAME_RENDER_FPS 60.0
 
+typedef struct WindowMotion {
+    int  x;
+    int  y;
+    f32  velX;
+    f32  velY;
+    bool ready;
+} WindowMotion;
+
 typedef struct Game {
-    PlayerState state;
-    FrameClock  clock;
-    Fruit       held;
-    rect        bounds;
-    bool        running;
+    PlayerState  state;
+    FrameClock   clock;
+    Fruit        held;
+    rect         bounds;
+    SDL_Window  *window;
+    WindowMotion windowMotion;
 } Game;
 
-bool game_init(Game *game);
+bool game_init(Game *game, SDL_Window *window);
 void game_shutdown(Game *game);
 
-void game_handle_events(Game *game);
+void game_handle_event(Game *game, const SDL_Event *event);
 void game_update(Game *game);
 void game_draw(const Game *game, SDL_Renderer *renderer);

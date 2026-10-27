@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.21)
 
 project(fruits C)
 
@@ -24,3 +24,19 @@ add_executable(fruits
 
 target_include_directories(fruits PRIVATE src)
 target_link_libraries(fruits PRIVATE SDL3::SDL3 SDL3_ttf::SDL3_ttf)
+
+if(MSVC)
+    target_compile_options(fruits PRIVATE /utf-8)
+endif()
+
+if(WIN32)
+    set_target_properties(fruits PROPERTIES WIN32_EXECUTABLE TRUE)
+
+    add_custom_command(TARGET fruits POST_BUILD
+        COMMAND ${CMAKE_COMMAND}
+            "-DDLLS=$<TARGET_RUNTIME_DLLS:fruits>"
+            "-DDESTINATION=$<TARGET_FILE_DIR:fruits>"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/copy_runtime_dlls.cmake"
+        VERBATIM
+    )
+endif()

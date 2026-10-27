@@ -1,0 +1,5 @@
+if(NOT DEFINED DLLS OR DLLS STREQUAL "")
+    return()
+endif()
+
+file(COPY ${DLLS} DESTINATION "${DESTINATION}")
