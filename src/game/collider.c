@@ -16,6 +16,8 @@ static const float SLEEP_SPEED = 25.0f;
 static const u16 SLEEP_FRAMES = 35;
 /* 정지해 있는 과일을 깨우는 충격 속도 */
 static const float WAKE_SPEED = 50.0f;
+/* 불안정한 균형점에 얹힌 과일을 굴러떨어뜨릴 때 주는 옆방향 속도 */
+static const float PERCH_NUDGE_SPEED = 90.0f;
 
 static const int SOLVER_ITERATIONS = 8;
 static const int MAX_SUBSTEPS = 8;
@@ -197,9 +199,10 @@ static void collider_integrate(PlayerState *state, float dt) {
     }
 }
 
-/* 다른 과일과 크게 겹쳐 있으면 아직 자리를 못 잡은 상태이므로 재우지 않는다 */
+/* 다른 과일과 크게 겹쳐 있으면 아직 자리를 못 잡은 상태이므로 재우지 않는다.
+   벽에 몰린 과일은 2~3px 정도는 겹친 채로 평형을 이루므로 여유를 둔다 */
 static bool collider_is_crowded(PlayerState *state, size_t index) {
-    const float tolerance = 2.0f;
+    const float tolerance = 4.0f;
     Fruit *fruit = &state->fruits[index];
 
     for (size_t i = 0; i < state->fruitsCount; ++i) {
@@ -218,6 +221,57 @@ static bool collider_is_crowded(PlayerState *state, size_t index) {
     }
 
     return false;
+}
+
+/* 공 위에 공을 얹은 상태인지 판정한다.
+   원은 접촉점을 축으로 회전하므로 이런 자세는 실제로는 불안정해서 반드시 굴러떨어진다.
+   그런데 두 원이 정확히 수직으로 놓이면 힘이 완벽히 대칭이라 계산으로는 영원히 균형을 유지한다.
+   그래서 이런 상태는 "붙은 것"으로 보고 정지시키지 않고 옆으로 밀어 굴러가게 한다. */
+static bool collider_is_perched(PlayerState *state, size_t index, rect bounds) {
+    Fruit *fruit = &state->fruits[index];
+
+    /* 바닥에 닿아 있으면 안정 */
+    if (fruit->pos.y + fruit->r >= bounds.bottom - 1.0f) {
+        return false;
+    }
+    /* 벽에 끼여 있으면 굴러갈 공간이 없으므로 그대로 둔다 */
+    if (fruit->pos.x - fruit->r <= bounds.left + 0.5f || fruit->pos.x + fruit->r >= bounds.right - 0.5f) {
+        return false;
+    }
+
+    int supports = 0;
+    float normal_x = 0.0f;
+
+    for (size_t i = 0; i < state->fruitsCount; ++i) {
+        if (i == index) {
+            continue;
+        }
+
+        Fruit *other = &state->fruits[i];
+
+        /* 위쪽에 있는 과일은 받쳐주지 않는다 */
+        if (other->pos.y <= fruit->pos.y) {
+            continue;
+        }
+
+        float dx = other->pos.x - fruit->pos.x;
+        float dy = other->pos.y - fruit->pos.y;
+        float dist = sqrtf((dx * dx) + (dy * dy));
+
+        if (dist > fruit->r + other->r + 2.0f) {
+            continue;
+        }
+
+        supports++;
+        normal_x = dist > 0.0001f ? dx / dist : 0.0f;
+    }
+
+    if (supports != 1) {
+        return false;
+    }
+
+    /* 받쳐주는 과일이 거의 바로 아래에 있으면 불안정한 균형점이다 */
+    return fabsf(normal_x) < 0.30f;
 }
 
 /* 가장 빠른 과일이 자기 반지름의 절반보다 많이 움직이면 놓칠 수 있으므로 단계를 쪼갠다 */
@@ -270,7 +324,13 @@ void collider_step(PlayerState *state, rect bounds, float dt) {
         }
 
         if (vec2_length_sq(fruit->vel) < SLEEP_SPEED * SLEEP_SPEED && !collider_is_crowded(state, i)) {
-            if (++fruit->sleepFrames >= SLEEP_FRAMES) {
+            if (collider_is_perched(state, i, bounds)) {
+                /* 불안정한 균형점에 얹혀 있으면 굴러떨어지도록 살짝 민다 */
+                float direction = (fruit->id & 1u) ? 1.0f : -1.0f;
+
+                fruit->vel.x += direction * PERCH_NUDGE_SPEED;
+                fruit->sleepFrames = 0;
+            } else if (++fruit->sleepFrames >= SLEEP_FRAMES) {
                 fruit->sleeping = true;
                 fruit->vel = vec2_zero();
             }
