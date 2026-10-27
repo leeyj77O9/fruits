@@ -34,6 +34,7 @@ typedef struct FruitInfo {
 
 extern const FruitInfo FRUITS_INFOS[];
 extern const int MAX_RANDOM_FRUIT_TYPE;
+extern const float FRUIT_PIXELS_PER_UNIT;
 
 Fruit*      fruit_create(vec2 pos, FruitType type);
 Fruit*      fruit_clone(Fruit* f);

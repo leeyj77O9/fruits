@@ -9,7 +9,7 @@
 #include "../util/rect.h"
 #include <math.h>
 
-const float GRAVITY = 200.0f;
+const float GRAVITY = 2000.0f;
 const float RESTITUTION = 0.15f;    
 const float FLOOR_FRICTION;
 const float POSITION_SLOP;

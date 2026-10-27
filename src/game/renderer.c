@@ -1,7 +1,5 @@
 #include "renderer.h"
 
-const float FRUIT_PIXELS_PER_UNIT = 10.0f;
-
 void render(SDL_Renderer *renderer, PlayerState* state) {
     render_score(renderer, state->score);
     
@@ -15,7 +13,7 @@ void render_score(SDL_Renderer *renderer, u64 score) {
 }
 
 void render_fruit(SDL_Renderer *renderer, Fruit *fruit) {
-    float r = fruit->r * FRUIT_PIXELS_PER_UNIT;
+    float r = fruit->r;
     rgba color = FRUITS_INFOS[fruit->type].color;
     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
     for (float dx = -r; dx < r; dx += 1.0f) {
