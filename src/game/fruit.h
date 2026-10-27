@@ -22,7 +22,7 @@ typedef struct Fruit {
     u16       id;
     vec2      pos;
     vec2      vel;
-    float     r;
+    f32       r;
     FruitType type;
     bool      sleeping;
     u16       sleepFrames;
@@ -30,13 +30,13 @@ typedef struct Fruit {
 
 typedef struct FruitInfo {
     const char* name;
-    const float r;
+    const f32 r;
     const rgba  color;
 } FruitInfo;
 
 extern const FruitInfo FRUITS_INFOS[];
 extern const int MAX_RANDOM_FRUIT_TYPE;
-extern const float FRUIT_PIXELS_PER_UNIT;
+extern const f32 FRUIT_PIXELS_PER_UNIT;
 
 Fruit*      fruit_create(vec2 pos, FruitType type);
 Fruit       fruit_make(vec2 pos, FruitType type);

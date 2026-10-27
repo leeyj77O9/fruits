@@ -10,18 +10,18 @@ vec2 vec2_add(vec2 a, vec2 b) {
 vec2 vec2_sub(vec2 a, vec2 b) {
     return (vec2){a.x - b.x, a.y - b.y};
 }
-vec2 vec2_scale(vec2 v, float s) {
+vec2 vec2_scale(vec2 v, f32 s) {
     return (vec2){v.x * s, v.y * s};
 }   
 
-float vec2_dot(vec2 a, vec2 b) {
+f32 vec2_dot(vec2 a, vec2 b) {
     return (a.x * b.x) + (a.y * b.y);
 }
-float vec2_length_sq(vec2 v) {
+f32 vec2_length_sq(vec2 v) {
     return vec2_dot(v, v);
 }
 vec2 vec2_normalize(vec2 v) {
-    float length_sq = vec2_length_sq(v);
+    f32 length_sq = vec2_length_sq(v);
 
     if (length_sq == 0.0f) {
         return vec2_zero();

@@ -11,8 +11,6 @@ typedef struct PlayerState {
     size_t fruitsCapacity;
 } PlayerState;
 
-extern const size_t STATE_FRUIT_LIST_DEFAULT_SIZE;
-
 bool   state_init(PlayerState* state);
 void   state_resize(PlayerState* state); 
 void   state_clear(PlayerState* state);

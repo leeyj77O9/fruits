@@ -9,7 +9,6 @@
 #include <stdlib.h>
 
 #define DROP_LINE_Y 100.0f
-/* 렌더링 프레임률 상한. vsync가 동작하지 않는 환경에서도 CPU를 다 쓰지 않게 한다 */
 #define RENDER_FPS 60.0
 
 void draw(SDL_Renderer *renderer, PlayerState *state, Fruit *held);

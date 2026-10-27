@@ -17,7 +17,7 @@ const FruitInfo FRUITS_INFOS[] = {
 const int MAX_RANDOM_FRUIT_TYPE = 5;
 
 /* FRUITS_INFOS의 r(1.0~5.5)을 픽셀 단위로 환산하는 배율 */
-const float FRUIT_PIXELS_PER_UNIT = 10.0f;
+const f32 FRUIT_PIXELS_PER_UNIT = 10.0f;
 
 Fruit fruit_make(vec2 pos, FruitType type) {
     static u16 id = 0;

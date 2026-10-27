@@ -1,31 +1,26 @@
 #include "collider.h"
 #include <math.h>
 
-const float GRAVITY = 2000.0f;
-const float RESTITUTION = 0.15f;
-const float FLOOR_FRICTION = 0.98f;
-const float PAIR_FRICTION = 0.22f;
-const float POSITION_SLOP = 0.5f;
+const f32 GRAVITY = 2000.0f;
+const f32 RESTITUTION = 0.15f;
+const f32 FLOOR_FRICTION = 0.98f;
+const f32 PAIR_FRICTION = 0.22f;
+const f32 POSITION_SLOP = 0.5f;
 
-/* 이 속도보다 느린 충격은 튕기지 않게 해서 더미가 영원히 떨리는 것을 막는다 */
-static const float RESTITUTION_SPEED_THRESHOLD = 100.0f;
-/* 한 번에 겹침을 100% 풀면 튀어오르므로 일부만 보정한다 */
-static const float CORRECTION_PERCENT = 0.6f;
-/* 이 속도 이하로 이만큼 연속 유지되면 정지 상태로 본다 */
-static const float SLEEP_SPEED = 25.0f;
+static const f32 RESTITUTION_SPEED_THRESHOLD = 100.0f;
+static const f32 CORRECTION_PERCENT = 0.6f;
+static const f32 SLEEP_SPEED = 25.0f;
 static const u16 SLEEP_FRAMES = 35;
-/* 정지해 있는 과일을 깨우는 충격 속도 */
-static const float WAKE_SPEED = 50.0f;
-/* 불안정한 균형점에 얹힌 과일을 굴러떨어뜨릴 때 주는 옆방향 속도 */
-static const float PERCH_NUDGE_SPEED = 90.0f;
+static const f32 WAKE_SPEED = 50.0f;
+static const f32 PERCH_NUDGE_SPEED = 90.0f;
 
 static const int SOLVER_ITERATIONS = 8;
 static const int MAX_SUBSTEPS = 8;
 
 bool collider_overlap(Fruit *a, Fruit *b) {
-    float dx = b->pos.x - a->pos.x;
-    float dy = b->pos.y - a->pos.y;
-    float radii = a->r + b->r;
+    f32 dx = b->pos.x - a->pos.x;
+    f32 dy = b->pos.y - a->pos.y;
+    f32 radii = a->r + b->r;
 
     return (dx * dx) + (dy * dy) <= radii * radii;
 }
@@ -38,19 +33,17 @@ bool collider_overlap_wall(Fruit *f, rect bounds) {
 
 void collider_resolve_pair(Fruit *a, Fruit *b) {
     vec2 delta = vec2_sub(b->pos, a->pos);
-    float dist_sq = vec2_length_sq(delta);
-    float radii = a->r + b->r;
+    f32 dist_sq = vec2_length_sq(delta);
+    f32 radii = a->r + b->r;
 
     if (dist_sq >= radii * radii) {
         return;
     }
 
-    /* 둘 다 자고 있으면 계산할 필요 없음 */
     if (a->sleeping && b->sleeping) {
         return;
     }
 
-    /* 자는 과일을 충분히 빠른 상대가 건드리면 깨운다 */
     if (a->sleeping && vec2_length_sq(b->vel) > WAKE_SPEED * WAKE_SPEED) {
         a->sleeping = false;
         a->sleepFrames = 0;
@@ -60,58 +53,53 @@ void collider_resolve_pair(Fruit *a, Fruit *b) {
         b->sleepFrames = 0;
     }
 
-    float dist = sqrtf(dist_sq);
+    f32 dist = sqrtf(dist_sq);
     vec2 normal;
 
-    /* 완전히 같은 위치면 법선이 없으므로 id로 결정되는 각도로 흩어뜨린다.
-       (한 방향으로만 밀면 과일이 전부 옆으로 늘어서 한 줄이 된다) */
     if (dist > 0.0001f) {
         normal = vec2_scale(delta, 1.0f / dist);
     } else {
-        float angle = (float)((a->id * 37u + b->id * 17u) % 360u) * 0.017453292f;
+        f32 angle = (f32)((a->id * 37u + b->id * 17u) % 360u) * 0.017453292f;
 
         normal = (vec2){cosf(angle), sinf(angle)};
         dist = 0.0f;
     }
 
-    float overlap = radii - dist;
+    f32 overlap = radii - dist;
 
-    /* 질량은 넓이에 비례한다고 가정 (자는 과일은 고정된 것으로 취급) */
-    float inv_a = a->sleeping ? 0.0f : 1.0f / (a->r * a->r);
-    float inv_b = b->sleeping ? 0.0f : 1.0f / (b->r * b->r);
-    float inv_sum = inv_a + inv_b;
+    f32 inv_a = a->sleeping ? 0.0f : 1.0f / (a->r * a->r);
+    f32 inv_b = b->sleeping ? 0.0f : 1.0f / (b->r * b->r);
+    f32 inv_sum = inv_a + inv_b;
 
     if (inv_sum <= 0.0f) {
         return;
     }
 
-    /* 위치 보정: slop을 남기고 일부만 밀어내어 진동을 억제 */
     if (overlap > POSITION_SLOP) {
-        float correction = (overlap - POSITION_SLOP) * CORRECTION_PERCENT;
+        f32 correction = (overlap - POSITION_SLOP) * CORRECTION_PERCENT;
 
         a->pos = vec2_sub(a->pos, vec2_scale(normal, correction * (inv_a / inv_sum)));
         b->pos = vec2_add(b->pos, vec2_scale(normal, correction * (inv_b / inv_sum)));
     }
 
     vec2 rel = vec2_sub(b->vel, a->vel);
-    float along = vec2_dot(rel, normal);
+    f32 along = vec2_dot(rel, normal);
 
-    /* 이미 떨어지는 중이면 반발 없음 */
     if (along > 0.0f) {
         return;
     }
 
-    float e = -along > RESTITUTION_SPEED_THRESHOLD ? RESTITUTION : 0.0f;
-    float jn = -(1.0f + e) * along / inv_sum;
+    f32 e = -along > RESTITUTION_SPEED_THRESHOLD ? RESTITUTION : 0.0f;
+    f32 jn = -(1.0f + e) * along / inv_sum;
 
     /* 접선 마찰 (쿨롱 한계) */
     vec2 tangent = vec2_sub(rel, vec2_scale(normal, along));
-    float tangent_len = sqrtf(vec2_length_sq(tangent));
+    f32 tangent_len = sqrtf(vec2_length_sq(tangent));
 
     if (tangent_len > 0.0001f) {
         vec2 tangent_dir = vec2_scale(tangent, 1.0f / tangent_len);
-        float jt = -vec2_dot(rel, tangent_dir) / inv_sum;
-        float limit = PAIR_FRICTION * fabsf(jn);
+        f32 jt = -vec2_dot(rel, tangent_dir) / inv_sum;
+        f32 limit = PAIR_FRICTION * fabsf(jn);
 
         if (jt > limit) {
             jt = limit;
@@ -152,7 +140,7 @@ void collider_resolve_wall(Fruit *f, rect bounds) {
         if (f->vel.y > 0.0f) {
             f->vel.y = f->vel.y > RESTITUTION_SPEED_THRESHOLD ? -f->vel.y * RESTITUTION : 0.0f;
         }
-        /* 바닥에 닿아 있는 동안에는 옆으로 미끄러지는 힘을 줄인다 */
+
         f->vel.x *= FLOOR_FRICTION;
     }
 }
@@ -163,7 +151,6 @@ static void collider_solve_contacts(PlayerState *state, rect bounds) {
             collider_resolve_wall(&state->fruits[i], bounds);
         }
 
-        /* 반복마다 순회 방향을 바꿔 인덱스 순서에 따른 편향을 줄인다 */
         bool forward = (iteration % 2) == 0;
 
         for (size_t k = 0; k < state->fruitsCount; ++k) {
@@ -180,13 +167,12 @@ static void collider_solve_contacts(PlayerState *state, rect bounds) {
         }
     }
 
-    /* 쌍 보정으로 밀려난 과일이 경계를 벗어나지 않도록 마지막에 한 번 더 정리 */
     for (size_t i = 0; i < state->fruitsCount; ++i) {
         collider_resolve_wall(&state->fruits[i], bounds);
     }
 }
 
-static void collider_integrate(PlayerState *state, float dt) {
+static void collider_integrate(PlayerState *state, f32 dt) {
     for (size_t i = 0; i < state->fruitsCount; ++i) {
         Fruit *fruit = &state->fruits[i];
 
@@ -199,10 +185,8 @@ static void collider_integrate(PlayerState *state, float dt) {
     }
 }
 
-/* 다른 과일과 크게 겹쳐 있으면 아직 자리를 못 잡은 상태이므로 재우지 않는다.
-   벽에 몰린 과일은 2~3px 정도는 겹친 채로 평형을 이루므로 여유를 둔다 */
 static bool collider_is_crowded(PlayerState *state, size_t index) {
-    const float tolerance = 4.0f;
+    const f32 tolerance = 4.0f;
     Fruit *fruit = &state->fruits[index];
 
     for (size_t i = 0; i < state->fruitsCount; ++i) {
@@ -211,9 +195,9 @@ static bool collider_is_crowded(PlayerState *state, size_t index) {
         }
 
         Fruit *other = &state->fruits[i];
-        float dx = other->pos.x - fruit->pos.x;
-        float dy = other->pos.y - fruit->pos.y;
-        float limit = (fruit->r + other->r) - tolerance;
+        f32 dx = other->pos.x - fruit->pos.x;
+        f32 dy = other->pos.y - fruit->pos.y;
+        f32 limit = (fruit->r + other->r) - tolerance;
 
         if (limit > 0.0f && (dx * dx) + (dy * dy) < limit * limit) {
             return true;
@@ -223,24 +207,18 @@ static bool collider_is_crowded(PlayerState *state, size_t index) {
     return false;
 }
 
-/* 공 위에 공을 얹은 상태인지 판정한다.
-   원은 접촉점을 축으로 회전하므로 이런 자세는 실제로는 불안정해서 반드시 굴러떨어진다.
-   그런데 두 원이 정확히 수직으로 놓이면 힘이 완벽히 대칭이라 계산으로는 영원히 균형을 유지한다.
-   그래서 이런 상태는 "붙은 것"으로 보고 정지시키지 않고 옆으로 밀어 굴러가게 한다. */
 static bool collider_is_perched(PlayerState *state, size_t index, rect bounds) {
     Fruit *fruit = &state->fruits[index];
 
-    /* 바닥에 닿아 있으면 안정 */
     if (fruit->pos.y + fruit->r >= bounds.bottom - 1.0f) {
         return false;
     }
-    /* 벽에 끼여 있으면 굴러갈 공간이 없으므로 그대로 둔다 */
     if (fruit->pos.x - fruit->r <= bounds.left + 0.5f || fruit->pos.x + fruit->r >= bounds.right - 0.5f) {
         return false;
     }
 
     int supports = 0;
-    float normal_x = 0.0f;
+    f32 normal_x = 0.0f;
 
     for (size_t i = 0; i < state->fruitsCount; ++i) {
         if (i == index) {
@@ -249,14 +227,13 @@ static bool collider_is_perched(PlayerState *state, size_t index, rect bounds) {
 
         Fruit *other = &state->fruits[i];
 
-        /* 위쪽에 있는 과일은 받쳐주지 않는다 */
         if (other->pos.y <= fruit->pos.y) {
             continue;
         }
 
-        float dx = other->pos.x - fruit->pos.x;
-        float dy = other->pos.y - fruit->pos.y;
-        float dist = sqrtf((dx * dx) + (dy * dy));
+        f32 dx = other->pos.x - fruit->pos.x;
+        f32 dy = other->pos.y - fruit->pos.y;
+        f32 dist = sqrtf((dx * dx) + (dy * dy));
 
         if (dist > fruit->r + other->r + 2.0f) {
             continue;
@@ -270,18 +247,16 @@ static bool collider_is_perched(PlayerState *state, size_t index, rect bounds) {
         return false;
     }
 
-    /* 받쳐주는 과일이 거의 바로 아래에 있으면 불안정한 균형점이다 */
     return fabsf(normal_x) < 0.30f;
 }
 
-/* 가장 빠른 과일이 자기 반지름의 절반보다 많이 움직이면 놓칠 수 있으므로 단계를 쪼갠다 */
-static int collider_substep_count(PlayerState *state, float dt) {
-    float max_speed = 0.0f;
-    float min_radius = 0.0f;
+static int collider_substep_count(PlayerState *state, f32 dt) {
+    f32 max_speed = 0.0f;
+    f32 min_radius = 0.0f;
 
     for (size_t i = 0; i < state->fruitsCount; ++i) {
         Fruit *fruit = &state->fruits[i];
-        float speed = sqrtf(vec2_length_sq(fruit->vel));
+        f32 speed = sqrtf(vec2_length_sq(fruit->vel));
 
         if (speed > max_speed) {
             max_speed = speed;
@@ -306,16 +281,15 @@ static int collider_substep_count(PlayerState *state, float dt) {
     return count;
 }
 
-void collider_step(PlayerState *state, rect bounds, float dt) {
+void collider_step(PlayerState *state, rect bounds, f32 dt) {
     int substeps = collider_substep_count(state, dt);
-    float sub_dt = dt / (float)substeps;
+    f32 sub_dt = dt / (f32)substeps;
 
     for (int step = 0; step < substeps; ++step) {
         collider_integrate(state, sub_dt);
         collider_solve_contacts(state, bounds);
     }
 
-    /* 충분히 오래 느리면 정지 상태로 전환한다 */
     for (size_t i = 0; i < state->fruitsCount; ++i) {
         Fruit *fruit = &state->fruits[i];
 
@@ -325,8 +299,7 @@ void collider_step(PlayerState *state, rect bounds, float dt) {
 
         if (vec2_length_sq(fruit->vel) < SLEEP_SPEED * SLEEP_SPEED && !collider_is_crowded(state, i)) {
             if (collider_is_perched(state, i, bounds)) {
-                /* 불안정한 균형점에 얹혀 있으면 굴러떨어지도록 살짝 민다 */
-                float direction = (fruit->id & 1u) ? 1.0f : -1.0f;
+                f32 direction = (fruit->id & 1u) ? 1.0f : -1.0f;
 
                 fruit->vel.x += direction * PERCH_NUDGE_SPEED;
                 fruit->sleepFrames = 0;
