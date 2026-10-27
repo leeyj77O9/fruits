@@ -6,7 +6,8 @@
 #include "game/collider.h"
 #include "game/renderer.h"
 
-static const f32 WINDOW_INERTIA = 2.0f;
+static const f32 WINDOW_INERTIA_X = 1.2f;
+static const f32 WINDOW_INERTIA_Y = 0.6f;
 static const f32 WINDOW_VELOCITY_SMOOTHING = 0.5f;
 static const f32 WINDOW_MAX_SPEED = 2500.0f;
 static const f32 WINDOW_MAX_IMPULSE = 600.0f;
@@ -117,8 +118,8 @@ static void game_apply_window_motion(Game *game, f64 frameDelta) {
     f32 accelX = (motion->velX - previousX) / dt;
     f32 accelY = (motion->velY - previousY) / dt;
 
-    f32 dvx = -accelX * dt * WINDOW_INERTIA;
-    f32 dvy = -accelY * dt * WINDOW_INERTIA;
+    f32 dvx = -accelX * dt * WINDOW_INERTIA_X;
+    f32 dvy = -accelY * dt * WINDOW_INERTIA_Y;
     f32 impulse = fabsf(dvx) + fabsf(dvy);
 
     if (impulse > WINDOW_MAX_IMPULSE) {
