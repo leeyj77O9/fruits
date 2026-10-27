@@ -6,7 +6,7 @@
 #include <stdbool.h>
 
 typedef enum FruitType {
-   FRUIT_TPYE_GRAPE,
+   FRUIT_TYPE_GRAPE,
    FRUIT_TYPE_STRAWBERRY,
    FRUIT_TYPE_LEMON,
    FRUIT_TYPE_APPLE,
@@ -28,11 +28,8 @@ typedef struct Fruit {
 typedef struct FruitInfo {
     const char* name;
     const float r;
-    const rgba rgba;
+    const rgba color;
 } FruitInfo;
-
-extern const char* const FRUIT_TYPE_NAMES[];
-extern const float FRUIT_RADIUSES[];
 
 extern const FruitInfo FRUITS_INFOS[];
 extern const int MAX_RANDOM_FRUIT_TYPE;

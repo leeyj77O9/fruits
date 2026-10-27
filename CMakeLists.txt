@@ -16,6 +16,7 @@ add_executable(fruits
     src/util/vec2.c
     src/util/type.c
     src/util/rgba.c
+    src/game/renderer.c
 )
 
 target_link_libraries(fruits PRIVATE SDL3::SDL3)

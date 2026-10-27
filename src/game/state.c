@@ -50,8 +50,8 @@ void state_add_fruit(PlayerState* state, vec2 pos, FruitType fruitType) {
         state_resize(state);
     } 
 
-    Fruit* fruit = fruit_create(pos, fruitType);
-    memcpy(state->fruits, fruit, sizeof(Fruit) * state->fruitsCount);
+    Fruit fruit = *fruit_create(pos, fruitType);
+    state->fruits[state->fruitsCount] = fruit;
     state->fruitsCount++;
 }
 bool state_remove_fruit(PlayerState* state, u16 id) {
@@ -62,7 +62,7 @@ bool state_remove_fruit(PlayerState* state, u16 id) {
     }
 
     if (idx != state->fruitsCount - 1) {
-        memcpy(state->fruits + idx, state->fruits + idx + 1, state->fruitsCount - idx - 1);
+        memcpy(state->fruits + idx, state->fruits + idx + 1, sizeof(Fruit) * (state->fruitsCount - idx - 1));
     } 
     state->fruitsCount--;
     return true;
