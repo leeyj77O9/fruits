@@ -50,7 +50,7 @@ void state_add_fruit(PlayerState* state, vec2 pos, FruitType fruitType) {
         state_resize(state);
     } 
 
-    Fruit fruit = *fruit_create(pos, fruitType);
+    Fruit fruit = fruit_make(pos, fruitType);
     state->fruits[state->fruitsCount] = fruit;
     state->fruitsCount++;
 }

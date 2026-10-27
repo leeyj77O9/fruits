@@ -19,15 +19,22 @@ const int MAX_RANDOM_FRUIT_TYPE = 5;
 /* FRUITS_INFOS의 r(1.0~5.5)을 픽셀 단위로 환산하는 배율 */
 const float FRUIT_PIXELS_PER_UNIT = 10.0f;
 
-Fruit* fruit_create(vec2 pos, FruitType type) {
+Fruit fruit_make(vec2 pos, FruitType type) {
     static u16 id = 0;
-    Fruit* f = malloc(sizeof(Fruit));
-    *f = (Fruit){ 
-        .id = id++, 
-        .pos = pos, 
+
+    return (Fruit){
+        .id = id++,
+        .pos = pos,
         .vel = { 0, 0 },
-        .r = FRUITS_INFOS[type].r * FRUIT_PIXELS_PER_UNIT, 
-        .type = type };
+        .r = FRUITS_INFOS[type].r * FRUIT_PIXELS_PER_UNIT,
+        .type = type,
+        .sleeping = false,
+        .sleepFrames = 0,
+    };
+}
+Fruit* fruit_create(vec2 pos, FruitType type) {
+    Fruit* f = malloc(sizeof(Fruit));
+    *f = fruit_make(pos, type);
     return f;
 }
 Fruit* fruit_clone(Fruit* f) {

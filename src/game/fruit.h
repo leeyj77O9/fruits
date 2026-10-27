@@ -39,6 +39,7 @@ extern const int MAX_RANDOM_FRUIT_TYPE;
 extern const float FRUIT_PIXELS_PER_UNIT;
 
 Fruit*      fruit_create(vec2 pos, FruitType type);
+Fruit       fruit_make(vec2 pos, FruitType type);
 Fruit*      fruit_clone(Fruit* f);
 
 bool        fruit_equals(Fruit* a, Fruit* b);
@@ -46,8 +47,8 @@ bool        fruit_equals_type(Fruit* a, FruitType type);
 bool        fruit_equals_id(Fruit* a, u16 id);
 bool        fruit_can_combine(Fruit* a, Fruit* b);
 
-const char* get_fruit_name(FruitType type);
+const char* fruit_get_name(FruitType type);
 
-FruitType   get_random_fruitType();
+FruitType   fruit_get_random_fruitType();
 
 void        fruit_upgrade(Fruit* f);
