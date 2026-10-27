@@ -1,32 +1,27 @@
-#include "game/frame_clock.h"
-#include "game/fruit.h"
-#include "game/state.h"
-#include "game/renderer.h"
-#include "game/collider.h"
 #include <SDL3/SDL.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdlib.h>
 
-#define DROP_LINE_Y 100.0f
-#define RENDER_FPS 60.0
+#include "game/frame_clock.h"
+#include "game/game.h"
+#include "game/renderer.h"
 
-void draw(SDL_Renderer *renderer, PlayerState *state, Fruit *held);
-int  close(SDL_Renderer *renderer, SDL_Window *window);
-void handle_event(SDL_Event *event, bool *running, Fruit *held, PlayerState *state, rect bounds);
-void clamp_to_bounds(Fruit *fruit, rect bounds);
+static void app_quit(SDL_Renderer *renderer, SDL_Window *window) {
+    renderer_quit();
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+}
 
-int main(int argc, char *argv[]) {
+int main(void) {
     if (!SDL_Init(SDL_INIT_VIDEO)) {
-        SDL_Log("Unable to initialize SDL: %s", SDL_GetError());
+        SDL_Log("SDL 초기화 실패: %s", SDL_GetError());
         return 1;
     }
 
     SDL_Window *window = NULL;
     SDL_Renderer *renderer = NULL;
 
-    if (!SDL_CreateWindowAndRenderer("Fruits", 800, 600, 0, &window, &renderer)) {
-        SDL_Log("Unable to create window and renderer: %s", SDL_GetError());
+    if (!SDL_CreateWindowAndRenderer("Fruits", GAME_WIDTH, GAME_HEIGHT, 0, &window, &renderer)) {
+        SDL_Log("창/렌더러 생성 실패: %s", SDL_GetError());
         SDL_Quit();
         return 1;
     }
@@ -37,79 +32,23 @@ int main(int argc, char *argv[]) {
         SDL_Log("렌더링 초기화에 실패했습니다: %s", SDL_GetError());
     }
 
-    bool running = true;
-    SDL_Event event;
-    PlayerState state;
-    FrameClock clock;
-    rect bounds = {0, 0, 800, 600};
+    Game game;
 
-    state_init(&state);
-    frame_clock_init(&clock);
-    srand((unsigned int)SDL_GetTicks());
-
-    Fruit held = fruit_make((vec2){400, DROP_LINE_Y}, fruit_get_random_fruitType());
-
-    while (running) {
-        handle_event(&event, &running, &held, &state, bounds);
-        frame_clock_tick(&clock);
-        while (frame_clock_fixed_step(&clock, 1.0 / 120.0)) {
-            collider_step(&state, bounds, 1.0 / 120.0);
-            state_merge_touching(&state);
-        }
-        draw(renderer, &state, &held);
-        frame_clock_limit(&clock, RENDER_FPS);
+    if (!game_init(&game)) {
+        SDL_Log("게임 초기화에 실패했습니다: %s", SDL_GetError());
+        app_quit(renderer, window);
+        return 1;
     }
-    
-    free(state.fruits);
 
-    return close(renderer, window);
-}
+    while (game.running) {
+        game_handle_events(&game);
+        game_update(&game);
+        game_draw(&game, renderer);
+        frame_clock_limit(&game.clock, GAME_RENDER_FPS);
+    }
 
-void draw(SDL_Renderer *renderer, PlayerState *state, Fruit *held) {
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-    SDL_RenderClear(renderer);
+    game_shutdown(&game);
+    app_quit(renderer, window);
 
-    render(renderer, state);
-    render_fruit(renderer, held);
-
-    SDL_RenderPresent(renderer);
-}
-int close(SDL_Renderer *renderer, SDL_Window *window) {
-    renderer_quit();
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
-    SDL_Quit();
     return 0;
-}
-void handle_event(SDL_Event *event, bool *running, Fruit *held, PlayerState *state, rect bounds) {
-    while (SDL_PollEvent(event)) {
-        switch (event->type) {
-            case SDL_EVENT_QUIT:
-                *running = false;
-                break;
-            case SDL_EVENT_MOUSE_MOTION:
-                held->pos.x = event->motion.x;
-                break;
-            case SDL_EVENT_MOUSE_BUTTON_DOWN:
-                if (event->button.button == SDL_BUTTON_LEFT) {
-                    state_add_fruit(state, held->pos, held->type);
-                    *held = fruit_make((vec2){held->pos.x, DROP_LINE_Y}, fruit_get_random_fruitType());
-                }
-                break;
-            default:
-                break;
-        }
-    }
-
-    clamp_to_bounds(held, bounds);
-}
-void clamp_to_bounds(Fruit *fruit, rect bounds) {
-    float min_x = bounds.left + fruit->r;
-    float max_x = bounds.right - fruit->r;
-
-    if (fruit->pos.x < min_x) {
-        fruit->pos.x = min_x;
-    } else if (fruit->pos.x > max_x) {
-        fruit->pos.x = max_x;
-    }
 }

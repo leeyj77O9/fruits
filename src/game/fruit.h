@@ -1,25 +1,27 @@
 #pragma once
 
-#include "../util/vec2.h"
-#include "../util/type.h"
-#include "../util/rgba.h"
 #include <stdbool.h>
 
+#include "util/rgba.h"
+#include "util/type.h"
+#include "util/vec2.h"
+
 typedef enum FruitType {
-   FRUIT_TYPE_GRAPE,
-   FRUIT_TYPE_STRAWBERRY,
-   FRUIT_TYPE_LEMON,
-   FRUIT_TYPE_APPLE,
-   FRUIT_TYPE_ORANGE,
-   FRUIT_TYPE_PEAR,
-   FRUIT_TYPE_PEACH,
-   FRUIT_TYPE_KIWI,
-   FRUIT_TYPE_MELON,
-   FRUIT_TYPE_WATERMELON,
+    FRUIT_TYPE_GRAPE,
+    FRUIT_TYPE_STRAWBERRY,
+    FRUIT_TYPE_LEMON,
+    FRUIT_TYPE_APPLE,
+    FRUIT_TYPE_ORANGE,
+    FRUIT_TYPE_PEAR,
+    FRUIT_TYPE_PEACH,
+    FRUIT_TYPE_KIWI,
+    FRUIT_TYPE_MELON,
+    FRUIT_TYPE_WATERMELON,
+    FRUIT_TYPE_COUNT,
 } FruitType;
 
 typedef struct Fruit {
-    u16       id;
+    u32       id;
     vec2      pos;
     vec2      vel;
     f32       r;
@@ -29,26 +31,21 @@ typedef struct Fruit {
 } Fruit;
 
 typedef struct FruitInfo {
-    const char* name;
-    const f32 r;
-    const rgba  color;
+    const char *name;
+    f32         radius;
+    rgba        color;
 } FruitInfo;
 
-extern const FruitInfo FRUITS_INFOS[];
-extern const int MAX_RANDOM_FRUIT_TYPE;
-extern const f32 FRUIT_PIXELS_PER_UNIT;
+extern const FruitInfo FRUITS_INFOS[FRUIT_TYPE_COUNT];
 
-Fruit*      fruit_create(vec2 pos, FruitType type);
 Fruit       fruit_make(vec2 pos, FruitType type);
-Fruit*      fruit_clone(Fruit* f);
 
-bool        fruit_equals(Fruit* a, Fruit* b);
-bool        fruit_equals_type(Fruit* a, FruitType type);
-bool        fruit_equals_id(Fruit* a, u16 id);
-bool        fruit_can_combine(Fruit* a, Fruit* b);
+f32         fruit_radius(FruitType type);
 
-const char* fruit_get_name(FruitType type);
+bool        fruit_equals_id(const Fruit *a, u32 id);
+bool        fruit_can_combine(const Fruit *a, const Fruit *b);
+bool        fruit_is_max_type(FruitType type);
 
-FruitType   fruit_get_random_fruitType();
+const char *fruit_get_name(FruitType type);
 
-void        fruit_upgrade(Fruit* f);
+FruitType   fruit_get_random_type(void);

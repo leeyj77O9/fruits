@@ -1,5 +1,4 @@
 #include "state.h"
-#include "fruit.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -25,23 +24,11 @@ static bool state_allocate(PlayerState *state, size_t capacity) {
     return true;
 }
 
-bool state_init(PlayerState* state) {
-    if (state == NULL) {
-        return false;
-    }
-
-    state->fruits = NULL;
-    state->fruitsCapacity = 0;
-    state->fruitsCount = 0;
-    state->score = 0;
-
-    return state_allocate(state, STATE_FRUIT_LIST_DEFAULT_SIZE);
+static bool state_fruit_is_full(const PlayerState *state) {
+    return state->fruitsCount >= state->fruitsCapacity;
 }
-void state_resize(PlayerState* state) {
-    if (!state_fruit_is_full(state)) {
-        return;
-    }
 
+static void state_resize(PlayerState *state) {
     size_t newCapacity = state->fruitsCapacity * STATE_FRUIT_LIST_GROWTH;
 
     if (newCapacity <= state->fruitsCapacity) {
@@ -62,50 +49,29 @@ void state_resize(PlayerState* state) {
     state->fruits = newFruits;
     state->fruitsCapacity = newCapacity;
 }
-void state_clear(PlayerState* state) {
-    if (state == NULL) {
-        return;
+
+static size_t state_index_of_fruit_by_id(const PlayerState *state, u32 id) {
+    for (size_t i = 0; i < state->fruitsCount; ++i) {
+        if (fruit_equals_id(&state->fruits[i], id)) {
+            return i;
+        }
     }
 
-    state->fruitsCount = 0;
-    state->score = 0;
-
-    if (state->fruitsCapacity >= STATE_FRUIT_LIST_DEFAULT_SIZE) {
-        return;
-    }
-
-    state_allocate(state, STATE_FRUIT_LIST_DEFAULT_SIZE);
+    return STATE_INDEX_NONE;
 }
-void state_add_fruit(PlayerState* state, vec2 pos, FruitType fruitType) {
-    if (state == NULL) {
-        return;
-    }
 
-    if (state_fruit_is_full(state)) {
-        state_resize(state);
-    }
+static bool state_remove_fruit(PlayerState *state, u32 id) {
+    size_t index = state_index_of_fruit_by_id(state, id);
 
-    if (state_fruit_is_full(state)) {
-        return;
-    }
-
-    state->fruits[state->fruitsCount] = fruit_make(pos, fruitType);
-    state->fruitsCount++;
-}
-bool state_remove_fruit(PlayerState* state, u16 id) {
-    if (state == NULL) {
+    if (index == STATE_INDEX_NONE) {
         return false;
     }
 
-    size_t idx = state_index_of_fruit_by_id(state, id);
-
-    if (idx == STATE_INDEX_NONE) {
-        return false;
+    if (index != state->fruitsCount - 1) {
+        memmove(state->fruits + index, state->fruits + index + 1,
+                sizeof(Fruit) * (state->fruitsCount - index - 1));
     }
 
-    if (idx != state->fruitsCount - 1) {
-        memmove(state->fruits + idx, state->fruits + idx + 1, sizeof(Fruit) * (state->fruitsCount - idx - 1));
-    } 
     state->fruitsCount--;
     return true;
 }
@@ -133,12 +99,104 @@ static void state_wake_around(PlayerState *state, vec2 pos, f32 radius) {
     }
 }
 
-static bool state_fruits_touch(Fruit *a, Fruit *b) {
+static bool state_fruits_touch(const Fruit *a, const Fruit *b) {
     f32 dx = b->pos.x - a->pos.x;
     f32 dy = b->pos.y - a->pos.y;
     f32 limit = a->r + b->r + STATE_MERGE_DISTANCE;
 
     return (dx * dx) + (dy * dy) <= limit * limit;
+}
+
+static void state_merge_fruit(PlayerState *state, u32 id1, u32 id2) {
+    if (id1 == id2) {
+        return;
+    }
+
+    size_t index1 = state_index_of_fruit_by_id(state, id1);
+    size_t index2 = state_index_of_fruit_by_id(state, id2);
+
+    if (index1 == STATE_INDEX_NONE || index2 == STATE_INDEX_NONE) {
+        return;
+    }
+
+    Fruit *a = &state->fruits[index1];
+    Fruit *b = &state->fruits[index2];
+
+    if (!fruit_can_combine(a, b)) {
+        return;
+    }
+
+    vec2 pos = vec2_scale(vec2_add(a->pos, b->pos), 0.5f);
+    vec2 vel = vec2_scale(vec2_add(a->vel, b->vel), 0.5f);
+    FruitType nextType = (FruitType)(a->type + 1);
+
+    u32 survivorId = a->pos.y < b->pos.y ? id1 : id2;
+    u32 removedId = survivorId == id1 ? id2 : id1;
+
+    if (!state_remove_fruit(state, removedId)) {
+        return;
+    }
+
+    size_t survivorIndex = state_index_of_fruit_by_id(state, survivorId);
+
+    if (survivorIndex == STATE_INDEX_NONE) {
+        return;
+    }
+
+    Fruit *survivor = &state->fruits[survivorIndex];
+
+    survivor->pos = pos;
+    survivor->vel = vel;
+    survivor->type = nextType;
+    survivor->r = fruit_radius(nextType);
+    survivor->sleeping = false;
+    survivor->sleepFrames = 0;
+
+    state_wake_around(state, pos, survivor->r);
+
+    state->score += state_merge_score(nextType);
+}
+
+bool state_init(PlayerState *state) {
+    if (state == NULL) {
+        return false;
+    }
+
+    state->fruits = NULL;
+    state->fruitsCapacity = 0;
+    state->fruitsCount = 0;
+    state->score = 0;
+
+    return state_allocate(state, STATE_FRUIT_LIST_DEFAULT_SIZE);
+}
+
+void state_free(PlayerState *state) {
+    if (state == NULL) {
+        return;
+    }
+
+    free(state->fruits);
+    state->fruits = NULL;
+    state->fruitsCapacity = 0;
+    state->fruitsCount = 0;
+    state->score = 0;
+}
+
+void state_add_fruit(PlayerState *state, vec2 pos, FruitType fruitType) {
+    if (state == NULL) {
+        return;
+    }
+
+    if (state_fruit_is_full(state)) {
+        state_resize(state);
+    }
+
+    if (state_fruit_is_full(state)) {
+        return;
+    }
+
+    state->fruits[state->fruitsCount] = fruit_make(pos, fruitType);
+    state->fruitsCount++;
 }
 
 bool state_merge_touching(PlayerState *state) {
@@ -156,13 +214,7 @@ bool state_merge_touching(PlayerState *state) {
                 Fruit *a = &state->fruits[i];
                 Fruit *b = &state->fruits[j];
 
-                if (a->type != b->type) {
-                    continue;
-                }
-                if (a->type >= FRUIT_TYPE_WATERMELON) {
-                    continue;
-                }
-                if (!state_fruits_touch(a, b)) {
+                if (!fruit_can_combine(a, b) || !state_fruits_touch(a, b)) {
                     continue;
                 }
 
@@ -179,82 +231,4 @@ bool state_merge_touching(PlayerState *state) {
     }
 
     return merged;
-}
-void state_merge_fruit(PlayerState* state, u16 id1, u16 id2) {
-    if (state == NULL || id1 == id2) {
-        return;
-    }
-
-    size_t idx1 = state_index_of_fruit_by_id(state, id1);
-    size_t idx2 = state_index_of_fruit_by_id(state, id2);
-
-    if (idx1 == STATE_INDEX_NONE || idx2 == STATE_INDEX_NONE) {
-        return;
-    }
-
-    Fruit *a = &state->fruits[idx1];
-    Fruit *b = &state->fruits[idx2];
-
-    if (!fruit_can_combine(a, b)) {
-        return;
-    }
-
-    if (a->type >= FRUIT_TYPE_WATERMELON) {
-        return;
-    }
-
-    vec2 pos = { (a->pos.x + b->pos.x) * 0.5f, (a->pos.y + b->pos.y) * 0.5f };
-    vec2 vel = { (a->vel.x + b->vel.x) * 0.5f, (a->vel.y + b->vel.y) * 0.5f };
-    FruitType nextType = (FruitType)(a->type + 1);
-
-    u16 survivorId = state->fruits[idx1].pos.y < state->fruits[idx2].pos.y ? id1 : id2;
-    u16 removedId = survivorId == id1 ? id2 : id1;
-
-    state_remove_fruit(state, removedId);
-
-    size_t survivorIdx = state_index_of_fruit_by_id(state, survivorId);
-
-    if (survivorIdx == STATE_INDEX_NONE) {
-        return;
-    }
-
-    Fruit *survivor = &state->fruits[survivorIdx];
-
-    survivor->pos = pos;
-    survivor->vel = vel;
-    survivor->type = nextType;
-    survivor->r = FRUITS_INFOS[nextType].r * FRUIT_PIXELS_PER_UNIT;
-    survivor->sleeping = false;
-    survivor->sleepFrames = 0;
-
-    state_wake_around(state, pos, survivor->r);
-
-    state->score += state_merge_score(nextType);
-}
-size_t state_index_of_fruit(PlayerState *state, FruitType fruitType) {
-    if (state == NULL) {
-        return STATE_INDEX_NONE;
-    }
-
-    for (size_t i = 0; i < state->fruitsCount; i++) {
-        if (fruit_equals_type(&state->fruits[i], fruitType)) {
-            return i;
-        }
-    }
-    return STATE_INDEX_NONE;
-}
-size_t state_index_of_fruit_by_id(PlayerState* state, u16 id) {
-    if (state == NULL) {
-        return STATE_INDEX_NONE;
-    }
-
-    for (size_t i = 0; i < state->fruitsCount; i++) {
-        if (fruit_equals_id(&state->fruits[i], id)) {
-            return i;
-        }
-    }
-    return STATE_INDEX_NONE;
-}
-bool state_fruit_is_full(PlayerState *state) {
-    return state->fruitsCount >= state->fruitsCapacity;
 }

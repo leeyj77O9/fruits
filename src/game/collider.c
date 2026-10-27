@@ -1,12 +1,11 @@
-#include "collider.h"
+#include "game/collider.h"
 #include <math.h>
 
-const f32 GRAVITY = 2000.0f;
-const f32 RESTITUTION = 0.15f;
-const f32 FLOOR_FRICTION = 0.98f;
-const f32 PAIR_FRICTION = 0.22f;
-const f32 POSITION_SLOP = 0.5f;
-
+static const f32 GRAVITY = 2000.0f;
+static const f32 RESTITUTION = 0.15f;
+static const f32 FLOOR_FRICTION = 0.98f;
+static const f32 PAIR_FRICTION = 0.22f;
+static const f32 POSITION_SLOP = 0.5f;
 static const f32 RESTITUTION_SPEED_THRESHOLD = 100.0f;
 static const f32 CORRECTION_PERCENT = 0.6f;
 static const f32 SLEEP_SPEED = 25.0f;
@@ -17,21 +16,15 @@ static const f32 PERCH_NUDGE_SPEED = 90.0f;
 static const int SOLVER_ITERATIONS = 8;
 static const int MAX_SUBSTEPS = 8;
 
-bool collider_overlap(Fruit *a, Fruit *b) {
+static bool collider_overlap(const Fruit *a, const Fruit *b) {
     f32 dx = b->pos.x - a->pos.x;
     f32 dy = b->pos.y - a->pos.y;
     f32 radii = a->r + b->r;
 
     return (dx * dx) + (dy * dy) <= radii * radii;
 }
-bool collider_overlap_wall(Fruit *f, rect bounds) {
-    return f->pos.x - f->r <= bounds.left
-        || f->pos.x + f->r >= bounds.right
-        || f->pos.y - f->r <= bounds.top
-        || f->pos.y + f->r >= bounds.bottom;
-}
 
-void collider_resolve_pair(Fruit *a, Fruit *b) {
+static void collider_resolve_pair(Fruit *a, Fruit *b) {
     vec2 delta = vec2_sub(b->pos, a->pos);
     f32 dist_sq = vec2_length_sq(delta);
     f32 radii = a->r + b->r;
@@ -92,9 +85,8 @@ void collider_resolve_pair(Fruit *a, Fruit *b) {
     f32 e = -along > RESTITUTION_SPEED_THRESHOLD ? RESTITUTION : 0.0f;
     f32 jn = -(1.0f + e) * along / inv_sum;
 
-    /* 접선 마찰 (쿨롱 한계) */
     vec2 tangent = vec2_sub(rel, vec2_scale(normal, along));
-    f32 tangent_len = sqrtf(vec2_length_sq(tangent));
+    f32 tangent_len = vec2_length(tangent);
 
     if (tangent_len > 0.0001f) {
         vec2 tangent_dir = vec2_scale(tangent, 1.0f / tangent_len);
@@ -117,7 +109,7 @@ void collider_resolve_pair(Fruit *a, Fruit *b) {
     b->vel = vec2_add(b->vel, vec2_scale(impulse, inv_b));
 }
 
-void collider_resolve_wall(Fruit *f, rect bounds) {
+static void collider_resolve_wall(Fruit *f, rect bounds) {
     if (f->pos.x - f->r < bounds.left) {
         f->pos.x = bounds.left + f->r;
         if (f->vel.x < 0.0f) {
@@ -185,16 +177,16 @@ static void collider_integrate(PlayerState *state, f32 dt) {
     }
 }
 
-static bool collider_is_crowded(PlayerState *state, size_t index) {
+static bool collider_is_crowded(const PlayerState *state, size_t index) {
     const f32 tolerance = 4.0f;
-    Fruit *fruit = &state->fruits[index];
+    const Fruit *fruit = &state->fruits[index];
 
     for (size_t i = 0; i < state->fruitsCount; ++i) {
         if (i == index) {
             continue;
         }
 
-        Fruit *other = &state->fruits[i];
+        const Fruit *other = &state->fruits[i];
         f32 dx = other->pos.x - fruit->pos.x;
         f32 dy = other->pos.y - fruit->pos.y;
         f32 limit = (fruit->r + other->r) - tolerance;
@@ -207,8 +199,8 @@ static bool collider_is_crowded(PlayerState *state, size_t index) {
     return false;
 }
 
-static bool collider_is_perched(PlayerState *state, size_t index, rect bounds) {
-    Fruit *fruit = &state->fruits[index];
+static bool collider_is_perched(const PlayerState *state, size_t index, rect bounds) {
+    const Fruit *fruit = &state->fruits[index];
 
     if (fruit->pos.y + fruit->r >= bounds.bottom - 1.0f) {
         return false;
@@ -225,7 +217,7 @@ static bool collider_is_perched(PlayerState *state, size_t index, rect bounds) {
             continue;
         }
 
-        Fruit *other = &state->fruits[i];
+        const Fruit *other = &state->fruits[i];
 
         if (other->pos.y <= fruit->pos.y) {
             continue;
@@ -250,13 +242,13 @@ static bool collider_is_perched(PlayerState *state, size_t index, rect bounds) {
     return fabsf(normal_x) < 0.30f;
 }
 
-static int collider_substep_count(PlayerState *state, f32 dt) {
+static int collider_substep_count(const PlayerState *state, f32 dt) {
     f32 max_speed = 0.0f;
     f32 min_radius = 0.0f;
 
     for (size_t i = 0; i < state->fruitsCount; ++i) {
-        Fruit *fruit = &state->fruits[i];
-        f32 speed = sqrtf(vec2_length_sq(fruit->vel));
+        const Fruit *fruit = &state->fruits[i];
+        f32 speed = vec2_length(fruit->vel);
 
         if (speed > max_speed) {
             max_speed = speed;
@@ -281,6 +273,33 @@ static int collider_substep_count(PlayerState *state, f32 dt) {
     return count;
 }
 
+static void collider_update_sleep(PlayerState *state, rect bounds) {
+    for (size_t i = 0; i < state->fruitsCount; ++i) {
+        Fruit *fruit = &state->fruits[i];
+
+        if (fruit->sleeping) {
+            continue;
+        }
+
+        bool slow = vec2_length_sq(fruit->vel) < SLEEP_SPEED * SLEEP_SPEED;
+
+        if (!slow || collider_is_crowded(state, i)) {
+            fruit->sleepFrames = 0;
+            continue;
+        }
+
+        if (collider_is_perched(state, i, bounds)) {
+            f32 direction = (fruit->id & 1u) != 0u ? 1.0f : -1.0f;
+
+            fruit->vel.x += direction * PERCH_NUDGE_SPEED;
+            fruit->sleepFrames = 0;
+        } else if (++fruit->sleepFrames >= SLEEP_FRAMES) {
+            fruit->sleeping = true;
+            fruit->vel = vec2_zero();
+        }
+    }
+}
+
 void collider_step(PlayerState *state, rect bounds, f32 dt) {
     int substeps = collider_substep_count(state, dt);
     f32 sub_dt = dt / (f32)substeps;
@@ -290,25 +309,5 @@ void collider_step(PlayerState *state, rect bounds, f32 dt) {
         collider_solve_contacts(state, bounds);
     }
 
-    for (size_t i = 0; i < state->fruitsCount; ++i) {
-        Fruit *fruit = &state->fruits[i];
-
-        if (fruit->sleeping) {
-            continue;
-        }
-
-        if (vec2_length_sq(fruit->vel) < SLEEP_SPEED * SLEEP_SPEED && !collider_is_crowded(state, i)) {
-            if (collider_is_perched(state, i, bounds)) {
-                f32 direction = (fruit->id & 1u) ? 1.0f : -1.0f;
-
-                fruit->vel.x += direction * PERCH_NUDGE_SPEED;
-                fruit->sleepFrames = 0;
-            } else if (++fruit->sleepFrames >= SLEEP_FRAMES) {
-                fruit->sleeping = true;
-                fruit->vel = vec2_zero();
-            }
-        } else {
-            fruit->sleepFrames = 0;
-        }
-    }
+    collider_update_sleep(state, bounds);
 }

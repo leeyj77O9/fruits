@@ -12,15 +12,15 @@ find_package(SDL3_ttf CONFIG REQUIRED)
 
 add_executable(fruits
     src/main.c
-    src/game/fruit.c
-    src/game/state.c
-    src/util/vec2.c
-    src/util/type.c
-    src/util/rgba.c
-    src/game/renderer.c
-    src/game/frame_clock.c
     src/game/collider.c
-    src/util/rect.c
+    src/game/frame_clock.c
+    src/game/fruit.c
+    src/game/game.c
+    src/game/renderer.c
+    src/game/state.c
+    src/game/text.c
+    src/util/vec2.c
 )
 
+target_include_directories(fruits PRIVATE src)
 target_link_libraries(fruits PRIVATE SDL3::SDL3 SDL3_ttf::SDL3_ttf)
