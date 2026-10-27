@@ -8,6 +8,7 @@
 extern const float GRAVITY;       
 extern const float RESTITUTION;    
 extern const float FLOOR_FRICTION;
+extern const float PAIR_FRICTION;
 extern const float POSITION_SLOP;
 
 bool collider_overlap(Fruit *a, Fruit *b);      

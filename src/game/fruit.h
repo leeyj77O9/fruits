@@ -24,6 +24,8 @@ typedef struct Fruit {
     vec2      vel;
     float     r;
     FruitType type;
+    bool      sleeping;
+    u16       sleepFrames;
 } Fruit;
 
 typedef struct FruitInfo {
