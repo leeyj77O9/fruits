@@ -8,6 +8,7 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(SDL3 CONFIG REQUIRED)
+find_package(SDL3_ttf CONFIG REQUIRED)
 
 add_executable(fruits
     src/main.c
@@ -22,4 +23,4 @@ add_executable(fruits
     src/util/rect.c
 )
 
-target_link_libraries(fruits PRIVATE SDL3::SDL3)
+target_link_libraries(fruits PRIVATE SDL3::SDL3 SDL3_ttf::SDL3_ttf)

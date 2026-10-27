@@ -34,6 +34,10 @@ int main(int argc, char *argv[]) {
 
     SDL_SetRenderVSync(renderer, 1);
 
+    if (!renderer_init()) {
+        SDL_Log("렌더링 초기화에 실패했습니다: %s", SDL_GetError());
+    }
+
     bool running = true;
     SDL_Event event;
     PlayerState state;
@@ -72,6 +76,7 @@ void draw(SDL_Renderer *renderer, PlayerState *state, Fruit *held) {
     SDL_RenderPresent(renderer);
 }
 int close(SDL_Renderer *renderer, SDL_Window *window) {
+    renderer_quit();
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
