@@ -19,31 +19,32 @@ typedef enum FruitType {
 } FruitType;
 
 typedef struct Fruit {
-    u16 id;
-    vec2 pos;
-    float r;
+    u16       id;
+    vec2      pos;
+    vec2      vel;
+    float     r;
     FruitType type;
 } Fruit;
 
 typedef struct FruitInfo {
     const char* name;
     const float r;
-    const rgba color;
+    const rgba  color;
 } FruitInfo;
 
 extern const FruitInfo FRUITS_INFOS[];
 extern const int MAX_RANDOM_FRUIT_TYPE;
 
-Fruit* fruit_create(vec2 pos, FruitType type);
-Fruit* fruit_clone(Fruit* f);
+Fruit*      fruit_create(vec2 pos, FruitType type);
+Fruit*      fruit_clone(Fruit* f);
 
-bool fruit_equals(Fruit* a, Fruit* b);
-bool fruit_equals_type(Fruit* a, FruitType type);
-bool fruit_equals_id(Fruit* a, u16 id);
-bool fruit_can_combine(Fruit* a, Fruit* b);
+bool        fruit_equals(Fruit* a, Fruit* b);
+bool        fruit_equals_type(Fruit* a, FruitType type);
+bool        fruit_equals_id(Fruit* a, u16 id);
+bool        fruit_can_combine(Fruit* a, Fruit* b);
 
 const char* get_fruit_name(FruitType type);
 
-FruitType get_random_fruitType();
+FruitType   get_random_fruitType();
 
-void fruit_upgrade(Fruit* f);
+void        fruit_upgrade(Fruit* f);

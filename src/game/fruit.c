@@ -19,7 +19,12 @@ const int MAX_RANDOM_FRUIT_TYPE = 5;
 Fruit* fruit_create(vec2 pos, FruitType type) {
     static u16 id = 0;
     Fruit* f = malloc(sizeof(Fruit));
-    *f = (Fruit){ .id = id++, .pos = pos, .r = FRUITS_INFOS[type].r, .type = type };
+    *f = (Fruit){ 
+        .id = id++, 
+        .pos = pos, 
+        .vel = { 0, 0 },
+        .r = FRUITS_INFOS[type].r, 
+        .type = type };
     return f;
 }
 Fruit* fruit_clone(Fruit* f) {

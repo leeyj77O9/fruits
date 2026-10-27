@@ -2,11 +2,11 @@
 
 const float FRUIT_PIXELS_PER_UNIT = 10.0f;
 
-void render(SDL_Renderer *rederer, PlayerState* state) {
-    render_score(rederer, state->score);
+void render(SDL_Renderer *renderer, PlayerState* state) {
+    render_score(renderer, state->score);
     
     for (size_t i = 0; i < state->fruitsCount; ++i) {
-        render_fruit(rederer, &state->fruits[i]);
+        render_fruit(renderer, &state->fruits[i]);
     }
 }
 
