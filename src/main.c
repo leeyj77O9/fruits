@@ -42,7 +42,6 @@ int main(int argc, char *argv[]) {
     frame_clock_init(&clock);
     srand((unsigned int)SDL_GetTicks());
 
-    /* 아직 떨어뜨리지 않은 과일. 마우스를 따라다니며 물리 연산에는 참여하지 않는다 */
     Fruit held = fruit_make((vec2){400, DROP_LINE_Y}, fruit_get_random_fruitType());
 
     while (running) {
@@ -54,6 +53,8 @@ int main(int argc, char *argv[]) {
         draw(renderer, &state, &held);
     }
     
+    free(state.fruits);
+
     return close(renderer, window);
 }
 
