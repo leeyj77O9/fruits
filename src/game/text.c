@@ -47,13 +47,13 @@ static void text_release(TextEntry *entry) {
     entry->key[0] = '\0';
 }
 
-static bool text_build(TextEntry *entry, SDL_Renderer *renderer, const char *text, const char *key, f32 size) {
+static bool text_build(TextEntry *entry, SDL_Renderer *renderer, const char *text, const char *key, f32 size, rgba color) {
     if (!TTF_SetFontSize(text_font, size)) {
         return false;
     }
 
-    SDL_Color color = {255, 255, 255, 255};
-    SDL_Surface *surface = TTF_RenderText_Blended(text_font, text, strlen(text), color);
+    SDL_Color sdlColor = {color.r, color.g, color.b, color.a};
+    SDL_Surface *surface = TTF_RenderText_Blended(text_font, text, strlen(text), sdlColor);
 
     if (surface == NULL) {
         return false;
@@ -81,10 +81,10 @@ static bool text_build(TextEntry *entry, SDL_Renderer *renderer, const char *tex
     return true;
 }
 
-static TextEntry *text_lookup(SDL_Renderer *renderer, const char *text, f32 size) {
+static TextEntry *text_lookup(SDL_Renderer *renderer, const char *text, f32 size, rgba color) {
     char key[TEXT_CACHE_KEY_SIZE];
 
-    snprintf(key, sizeof(key), "%.0f|%s", size, text);
+    snprintf(key, sizeof(key), "%.0f|%02x%02x%02x%02x|%s", size, color.r, color.g, color.b, color.a, text);
 
     for (int i = 0; i < TEXT_CACHE_COUNT; ++i) {
         if (cache[i].used && strcmp(cache[i].key, key) == 0) {
@@ -96,7 +96,7 @@ static TextEntry *text_lookup(SDL_Renderer *renderer, const char *text, f32 size
 
     cacheNext = (cacheNext + 1) % TEXT_CACHE_COUNT;
 
-    if (!text_build(entry, renderer, text, key, size)) {
+    if (!text_build(entry, renderer, text, key, size, color)) {
         return NULL;
     }
 
@@ -156,12 +156,12 @@ void text_quit(void) {
     }
 }
 
-void text_draw_sized(SDL_Renderer *renderer, const char *text, f32 x, f32 y, f32 size) {
+void text_draw_colored(SDL_Renderer *renderer, const char *text, f32 x, f32 y, f32 size, rgba color) {
     if (text_font == NULL || text == NULL) {
         return;
     }
 
-    TextEntry *entry = text_lookup(renderer, text, size);
+    TextEntry *entry = text_lookup(renderer, text, size, color);
 
     if (entry == NULL) {
         return;
@@ -171,16 +171,12 @@ void text_draw_sized(SDL_Renderer *renderer, const char *text, f32 x, f32 y, f32
     SDL_RenderTexture(renderer, entry->texture, NULL, &dest);
 }
 
-void text_draw(SDL_Renderer *renderer, const char *text, f32 x, f32 y) {
-    text_draw_sized(renderer, text, x, y, TEXT_FONT_SIZE);
-}
-
-void text_draw_centered(SDL_Renderer *renderer, const char *text, f32 centerX, f32 y, f32 size) {
+void text_draw_centered_colored(SDL_Renderer *renderer, const char *text, f32 centerX, f32 y, f32 size, rgba color) {
     if (text_font == NULL || text == NULL) {
         return;
     }
 
-    TextEntry *entry = text_lookup(renderer, text, size);
+    TextEntry *entry = text_lookup(renderer, text, size, color);
 
     if (entry == NULL) {
         return;
@@ -188,4 +184,16 @@ void text_draw_centered(SDL_Renderer *renderer, const char *text, f32 centerX, f
 
     SDL_FRect dest = {centerX - entry->width * 0.5f, y, entry->width, entry->height};
     SDL_RenderTexture(renderer, entry->texture, NULL, &dest);
+}
+
+void text_draw_sized(SDL_Renderer *renderer, const char *text, f32 x, f32 y, f32 size) {
+    text_draw_colored(renderer, text, x, y, size, RGBA_WHITE);
+}
+
+void text_draw(SDL_Renderer *renderer, const char *text, f32 x, f32 y) {
+    text_draw_sized(renderer, text, x, y, TEXT_FONT_SIZE);
+}
+
+void text_draw_centered(SDL_Renderer *renderer, const char *text, f32 centerX, f32 y, f32 size) {
+    text_draw_centered_colored(renderer, text, centerX, y, size, RGBA_WHITE);
 }

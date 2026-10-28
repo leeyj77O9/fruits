@@ -374,6 +374,7 @@ void game_draw(const Game *game, SDL_Renderer *renderer) {
 
     if (game->gameOver) {
         renderer_draw_game_over(renderer, game->state.score);
+        renderer_draw_score(renderer, game->state.score);
     }
 
     SDL_RenderPresent(renderer);
