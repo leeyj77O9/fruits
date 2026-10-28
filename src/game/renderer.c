@@ -396,3 +396,9 @@ void renderer_draw(SDL_Renderer *renderer, const PlayerState *state, const Fruit
 
     renderer_draw_score(renderer, state->score);
 }
+
+void renderer_draw_held(SDL_Renderer *renderer, const Fruit *held) {
+    if (held != NULL) {
+        renderer_draw_fruit(renderer, held);
+    }
+}

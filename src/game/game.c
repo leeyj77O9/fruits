@@ -361,8 +361,12 @@ void game_update(Game *game) {
 void game_draw(const Game *game, SDL_Renderer *renderer) {
     const Fruit *held = game->dropCooldown > 0.0f ? NULL : &game->held;
 
-    renderer_draw(renderer, &game->state, game->gameOver ? NULL : held);
+    renderer_draw(renderer, &game->state, NULL);
     renderer_draw_guide(renderer, game->overTime >= GAME_OVER_WARN_TIME);
+
+    if (!game->gameOver) {
+        renderer_draw_held(renderer, held);
+    }
 
     if (game->gameOver) {
         renderer_draw_game_over(renderer, game->state.score);
