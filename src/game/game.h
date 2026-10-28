@@ -30,6 +30,8 @@ typedef struct Game {
     FrameClock   clock;
     Fruit        held;
     f32          dropCooldown;
+    bool         moveLeft;
+    bool         moveRight;
     rect         bounds;
     SDL_Window  *window;
     WindowMotion windowMotion;

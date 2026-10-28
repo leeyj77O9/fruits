@@ -7,7 +7,8 @@
 #include "game/renderer.h"
 
 static const f32 DROP_COOLDOWN = 0.8f;
-static const f32 HELD_MOVE_STEP = 20.0f;
+static const f32 HELD_MOVE_SPEED = 600.0f;
+static const f32 HELD_MOVE_MAX_DT = 0.05f;
 static const f32 WINDOW_INERTIA_X = 1.2f;
 static const f32 WINDOW_INERTIA_Y = 0.6f;
 static const f32 WINDOW_VELOCITY_SMOOTHING = 0.5f;
@@ -60,6 +61,20 @@ static void game_try_drop(Game *game) {
 static void game_move_held(Game *game, f32 dx) {
     game->held.pos.x += dx;
     game_clamp_held(game);
+}
+
+static void game_move_held_by_input(Game *game, f32 dt) {
+    f32 direction = (f32)((int)game->moveRight - (int)game->moveLeft);
+
+    if (direction == 0.0f) {
+        return;
+    }
+
+    if (dt > HELD_MOVE_MAX_DT) {
+        dt = HELD_MOVE_MAX_DT;
+    }
+
+    game_move_held(game, direction * HELD_MOVE_SPEED * dt);
 }
 
 static void game_apply_impulse(Game *game, f32 dvx, f32 dvy) {
@@ -171,6 +186,8 @@ bool game_init(Game *game, SDL_Window *window) {
 
     game->held = fruit_make((vec2){GAME_WIDTH * 0.5f, GAME_DROP_LINE_Y}, fruit_get_random_type());
     game->dropCooldown = 0.0f;
+    game->moveLeft = false;
+    game->moveRight = false;
 
     int x = 0;
     int y = 0;
@@ -198,14 +215,30 @@ void game_handle_event(Game *game, const SDL_Event *event) {
                     }
                     break;
                 case SDLK_LEFT:
-                    game_move_held(game, -HELD_MOVE_STEP);
+                    game->moveLeft = true;
                     break;
                 case SDLK_RIGHT:
-                    game_move_held(game, HELD_MOVE_STEP);
+                    game->moveRight = true;
                     break;
                 default:
                     break;
             }
+            break;
+        case SDL_EVENT_KEY_UP:
+            switch (event->key.key) {
+                case SDLK_LEFT:
+                    game->moveLeft = false;
+                    break;
+                case SDLK_RIGHT:
+                    game->moveRight = false;
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case SDL_EVENT_WINDOW_FOCUS_LOST:
+            game->moveLeft = false;
+            game->moveRight = false;
             break;
         case SDL_EVENT_MOUSE_MOTION:
             game->held.pos.x = event->motion.x;
@@ -232,6 +265,7 @@ void game_update(Game *game) {
     }
 
     game_clamp_held(game);
+    game_move_held_by_input(game, (f32)dt);
     game_apply_window_motion(game, dt);
 
     while (frame_clock_fixed_step(&game->clock, GAME_PHYSICS_STEP)) {
