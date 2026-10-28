@@ -315,7 +315,7 @@ static void renderer_draw_fruit(SDL_Renderer *renderer, const Fruit *fruit) {
     if (sprite->texture != NULL) {
         SDL_FRect dest = {
             fruit->pos.x - sprite->width * 0.5f,
-            fruit->pos.y - sprite->height * 0.5f,
+            fruit->pos.y + fruit->r - sprite->height,
             sprite->width,
             sprite->height,
         };
