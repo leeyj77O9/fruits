@@ -14,6 +14,7 @@ enum {
 };
 
 #define GAME_DROP_LINE_Y 180.0f
+#define GAME_OVER_LINE_Y 330.0f
 #define GAME_PHYSICS_STEP (1.0 / 120.0)
 #define GAME_RENDER_FPS 60.0
 
@@ -30,6 +31,8 @@ typedef struct Game {
     FrameClock   clock;
     Fruit        held;
     f32          dropCooldown;
+    f32          overTime;
+    bool         gameOver;
     bool         moveLeft;
     bool         moveRight;
     rect         bounds;

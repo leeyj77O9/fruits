@@ -1,4 +1,5 @@
 #include "game/renderer.h"
+#include "game/game.h"
 #include "game/text.h"
 #include <SDL3_image/SDL_image.h>
 #include <math.h>
@@ -347,6 +348,38 @@ static void renderer_draw_fruit(SDL_Renderer *renderer, const Fruit *fruit) {
             }
         }
     }
+}
+
+void renderer_draw_guide(SDL_Renderer *renderer, bool danger) {
+    SDL_FRect line = {0.0f, GAME_OVER_LINE_Y - 1.0f, (f32)GAME_WIDTH, 2.0f};
+
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+
+    if (danger) {
+        SDL_SetRenderDrawColor(renderer, 255, 96, 96, 130);
+    } else {
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 34);
+    }
+
+    SDL_RenderFillRect(renderer, &line);
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+}
+
+void renderer_draw_game_over(SDL_Renderer *renderer, u64 score) {
+    SDL_FRect cover = {0.0f, 0.0f, (f32)GAME_WIDTH, (f32)GAME_HEIGHT};
+    char text[64];
+
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 190);
+    SDL_RenderFillRect(renderer, &cover);
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+
+    text_draw_centered(renderer, "GAME OVER", (f32)GAME_WIDTH * 0.5f, 296.0f, 58.0f);
+
+    snprintf(text, sizeof(text), "SCORE %llu", (unsigned long long)score);
+    text_draw_centered(renderer, text, (f32)GAME_WIDTH * 0.5f, 384.0f, 38.0f);
+
+    text_draw_centered(renderer, "PRESS R TO RESTART", (f32)GAME_WIDTH * 0.5f, 452.0f, 24.0f);
 }
 
 void renderer_draw(SDL_Renderer *renderer, const PlayerState *state, const Fruit *held) {

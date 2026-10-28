@@ -11,6 +11,9 @@ static const f32 FLOOR_MARGIN = 6.0f;
 static const f32 HELD_MOVE_SPEED = 600.0f;
 static const f32 HELD_MOVE_MAX_DT = 0.05f;
 static const f32 TWO_PI = 6.283185307179586f;
+static const f32 GAME_OVER_HOLD_TIME = 1.2f;
+static const f32 GAME_OVER_SPEED = 400.0f;
+static const f32 GAME_OVER_WARN_TIME = 0.35f;
 static const f32 WINDOW_INERTIA_X = 1.2f;
 static const f32 WINDOW_INERTIA_Y = 0.6f;
 static const f32 WINDOW_VELOCITY_SMOOTHING = 0.5f;
@@ -188,6 +191,8 @@ bool game_init(Game *game, SDL_Window *window) {
 
     game->held = fruit_make((vec2){GAME_WIDTH * 0.5f, GAME_DROP_LINE_Y}, fruit_get_random_type());
     game->dropCooldown = 0.0f;
+    game->overTime = 0.0f;
+    game->gameOver = false;
     game->moveLeft = false;
     game->moveRight = false;
 
@@ -201,6 +206,20 @@ bool game_init(Game *game, SDL_Window *window) {
     }
 
     return true;
+}
+
+static void game_restart(Game *game) {
+    game->state.fruitsCount = 0;
+    game->state.score = 0;
+    game->held = fruit_make((vec2){GAME_WIDTH * 0.5f, GAME_DROP_LINE_Y}, fruit_get_random_type());
+    game->dropCooldown = 0.0f;
+    game->overTime = 0.0f;
+    game->gameOver = false;
+    game->moveLeft = false;
+    game->moveRight = false;
+
+    game_clamp_held(game);
+    frame_clock_init(&game->clock);
 }
 
 void game_shutdown(Game *game) {
@@ -221,6 +240,11 @@ void game_handle_event(Game *game, const SDL_Event *event) {
                     break;
                 case SDLK_RIGHT:
                     game->moveRight = true;
+                    break;
+                case SDLK_R:
+                    if (!event->key.repeat) {
+                        game_restart(game);
+                    }
                     break;
                 default:
                     break;
@@ -277,8 +301,42 @@ static void game_update_rotation(Game *game, f32 dt) {
     }
 }
 
+static void game_check_over(Game *game, f32 dt) {
+    bool danger = false;
+
+    for (size_t i = 0; i < game->state.fruitsCount; ++i) {
+        const Fruit *fruit = &game->state.fruits[i];
+
+        if (fruit->pos.y - fruit->r >= GAME_OVER_LINE_Y) {
+            continue;
+        }
+
+        if (fabsf(fruit->vel.x) + fabsf(fruit->vel.y) >= GAME_OVER_SPEED) {
+            continue;
+        }
+
+        danger = true;
+        break;
+    }
+
+    if (!danger) {
+        game->overTime = 0.0f;
+        return;
+    }
+
+    game->overTime += dt;
+
+    if (game->overTime >= GAME_OVER_HOLD_TIME) {
+        game->gameOver = true;
+    }
+}
+
 void game_update(Game *game) {
     f64 dt = frame_clock_tick(&game->clock);
+
+    if (game->gameOver) {
+        return;
+    }
 
     if (game->dropCooldown > 0.0f) {
         game->dropCooldown -= (f32)dt;
@@ -296,12 +354,19 @@ void game_update(Game *game) {
         collider_step(&game->state, game->bounds, (f32)GAME_PHYSICS_STEP);
         state_merge_touching(&game->state);
         game_update_rotation(game, (f32)GAME_PHYSICS_STEP);
+        game_check_over(game, (f32)GAME_PHYSICS_STEP);
     }
 }
 
 void game_draw(const Game *game, SDL_Renderer *renderer) {
     const Fruit *held = game->dropCooldown > 0.0f ? NULL : &game->held;
 
-    renderer_draw(renderer, &game->state, held);
+    renderer_draw(renderer, &game->state, game->gameOver ? NULL : held);
+    renderer_draw_guide(renderer, game->overTime >= GAME_OVER_WARN_TIME);
+
+    if (game->gameOver) {
+        renderer_draw_game_over(renderer, game->state.score);
+    }
+
     SDL_RenderPresent(renderer);
 }
