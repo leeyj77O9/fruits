@@ -6,6 +6,8 @@
 #include "game/collider.h"
 #include "game/renderer.h"
 
+static const f32 DROP_COOLDOWN = 0.8f;
+static const f32 HELD_MOVE_STEP = 20.0f;
 static const f32 WINDOW_INERTIA_X = 1.2f;
 static const f32 WINDOW_INERTIA_Y = 0.6f;
 static const f32 WINDOW_VELOCITY_SMOOTHING = 0.5f;
@@ -43,6 +45,20 @@ static void game_drop(Game *game) {
     state_add_fruit(&game->state, game->held.pos, game->held.type);
 
     game->held = fruit_make((vec2){game->held.pos.x, GAME_DROP_LINE_Y}, fruit_get_random_type());
+    game_clamp_held(game);
+}
+
+static void game_try_drop(Game *game) {
+    if (game->dropCooldown > 0.0f) {
+        return;
+    }
+
+    game_drop(game);
+    game->dropCooldown = DROP_COOLDOWN;
+}
+
+static void game_move_held(Game *game, f32 dx) {
+    game->held.pos.x += dx;
     game_clamp_held(game);
 }
 
@@ -154,6 +170,7 @@ bool game_init(Game *game, SDL_Window *window) {
     srand((unsigned int)SDL_GetTicks());
 
     game->held = fruit_make((vec2){GAME_WIDTH * 0.5f, GAME_DROP_LINE_Y}, fruit_get_random_type());
+    game->dropCooldown = 0.0f;
 
     int x = 0;
     int y = 0;
@@ -173,12 +190,29 @@ void game_shutdown(Game *game) {
 
 void game_handle_event(Game *game, const SDL_Event *event) {
     switch (event->type) {
+        case SDL_EVENT_KEY_DOWN:
+            switch (event->key.key) {
+                case SDLK_SPACE:
+                    if (!event->key.repeat) {
+                        game_try_drop(game);
+                    }
+                    break;
+                case SDLK_LEFT:
+                    game_move_held(game, -HELD_MOVE_STEP);
+                    break;
+                case SDLK_RIGHT:
+                    game_move_held(game, HELD_MOVE_STEP);
+                    break;
+                default:
+                    break;
+            }
+            break;
         case SDL_EVENT_MOUSE_MOTION:
             game->held.pos.x = event->motion.x;
             break;
         case SDL_EVENT_MOUSE_BUTTON_DOWN:
             if (event->button.button == SDL_BUTTON_LEFT) {
-                game_drop(game);
+                game_try_drop(game);
             }
             break;
         default:
@@ -188,6 +222,14 @@ void game_handle_event(Game *game, const SDL_Event *event) {
 
 void game_update(Game *game) {
     f64 dt = frame_clock_tick(&game->clock);
+
+    if (game->dropCooldown > 0.0f) {
+        game->dropCooldown -= (f32)dt;
+
+        if (game->dropCooldown < 0.0f) {
+            game->dropCooldown = 0.0f;
+        }
+    }
 
     game_clamp_held(game);
     game_apply_window_motion(game, dt);
@@ -199,6 +241,8 @@ void game_update(Game *game) {
 }
 
 void game_draw(const Game *game, SDL_Renderer *renderer) {
-    renderer_draw(renderer, &game->state, &game->held);
+    const Fruit *held = game->dropCooldown > 0.0f ? NULL : &game->held;
+
+    renderer_draw(renderer, &game->state, held);
     SDL_RenderPresent(renderer);
 }

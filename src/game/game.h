@@ -29,6 +29,7 @@ typedef struct Game {
     PlayerState  state;
     FrameClock   clock;
     Fruit        held;
+    f32          dropCooldown;
     rect         bounds;
     SDL_Window  *window;
     WindowMotion windowMotion;
