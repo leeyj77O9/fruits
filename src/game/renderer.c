@@ -1,5 +1,6 @@
 #include "game/renderer.h"
 #include "game/text.h"
+#include <SDL3_image/SDL_image.h>
 #include <math.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -7,20 +8,202 @@
 static const f32 SCORE_MARGIN_X = 20.0f;
 static const f32 SCORE_MARGIN_Y = 14.0f;
 static const f32 CIRCLE_PADDING = 1.0f;
+static const Uint8 SPRITE_ALPHA_THRESHOLD = 8;
 
 enum {
     CIRCLE_SAMPLES = 8,
     CIRCLE_SAMPLE_COUNT = CIRCLE_SAMPLES * CIRCLE_SAMPLES,
 };
 
-typedef struct CircleTexture {
+typedef struct FruitSprite {
     SDL_Texture *texture;
-    f32          half;
-} CircleTexture;
+    f32          width;
+    f32          height;
+    bool         tinted;
+} FruitSprite;
 
-static CircleTexture fruitTextures[FRUIT_TYPE_COUNT];
+static const char *const SPRITE_FILES[FRUIT_TYPE_COUNT] = {
+    [FRUIT_TYPE_GRAPE] = "00",
+    [FRUIT_TYPE_STRAWBERRY] = "10",
+    [FRUIT_TYPE_LEMON] = "20",
+    [FRUIT_TYPE_APPLE] = "30",
+    [FRUIT_TYPE_ORANGE] = "40",
+    [FRUIT_TYPE_PEAR] = "01",
+    [FRUIT_TYPE_PEACH] = "11",
+    [FRUIT_TYPE_KIWI] = "21",
+    [FRUIT_TYPE_MELON] = "31",
+    [FRUIT_TYPE_WATERMELON] = "41",
+};
 
-static bool renderer_create_circle_texture(SDL_Renderer *renderer, f32 radius, CircleTexture *result) {
+static FruitSprite fruitSprites[FRUIT_TYPE_COUNT];
+
+static bool renderer_find_sprite_box(SDL_Surface *surface, SDL_Rect *box) {
+    int minX = surface->w;
+    int minY = surface->h;
+    int maxX = -1;
+    int maxY = -1;
+
+    for (int y = 0; y < surface->h; ++y) {
+        for (int x = 0; x < surface->w; ++x) {
+            Uint8 r, g, b, a;
+
+            SDL_ReadSurfacePixel(surface, x, y, &r, &g, &b, &a);
+
+            if (a <= SPRITE_ALPHA_THRESHOLD) {
+                continue;
+            }
+
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+        }
+    }
+
+    if (maxX < 0) {
+        return false;
+    }
+
+    *box = (SDL_Rect){minX, minY, maxX - minX + 1, maxY - minY + 1};
+    return true;
+}
+
+static SDL_Surface *renderer_resample_surface(SDL_Surface *source, const SDL_Rect *box, int width, int height) {
+    SDL_Surface *result = SDL_CreateSurface(width, height, SDL_PIXELFORMAT_RGBA8888);
+
+    if (result == NULL) {
+        return NULL;
+    }
+
+    const SDL_PixelFormatDetails *format = SDL_GetPixelFormatDetails(result->format);
+    f32 stepX = (f32)box->w / (f32)width;
+    f32 stepY = (f32)box->h / (f32)height;
+
+    for (int dy = 0; dy < height; ++dy) {
+        Uint32 *row = (Uint32 *)((Uint8 *)result->pixels + (size_t)dy * (size_t)result->pitch);
+        f32 y0 = (f32)box->y + (f32)dy * stepY;
+        f32 y1 = y0 + stepY;
+        int sy0 = (int)floorf(y0);
+        int sy1 = (int)ceilf(y1);
+
+        if (sy0 < 0) sy0 = 0;
+        if (sy1 > source->h) sy1 = source->h;
+
+        for (int dx = 0; dx < width; ++dx) {
+            f32 x0 = (f32)box->x + (f32)dx * stepX;
+            f32 x1 = x0 + stepX;
+            int sx0 = (int)floorf(x0);
+            int sx1 = (int)ceilf(x1);
+            f32 rSum = 0.0f;
+            f32 gSum = 0.0f;
+            f32 bSum = 0.0f;
+            f32 aSum = 0.0f;
+            f32 wSum = 0.0f;
+
+            if (sx0 < 0) sx0 = 0;
+            if (sx1 > source->w) sx1 = source->w;
+
+            for (int sy = sy0; sy < sy1; ++sy) {
+                f32 wy = fminf(y1, (f32)(sy + 1)) - fmaxf(y0, (f32)sy);
+
+                if (wy <= 0.0f) {
+                    continue;
+                }
+
+                for (int sx = sx0; sx < sx1; ++sx) {
+                    f32 wx = fminf(x1, (f32)(sx + 1)) - fmaxf(x0, (f32)sx);
+
+                    if (wx <= 0.0f) {
+                        continue;
+                    }
+
+                    Uint8 r, g, b, a;
+                    f32 weight = wx * wy;
+
+                    SDL_ReadSurfacePixel(source, sx, sy, &r, &g, &b, &a);
+
+                    rSum += (f32)r * (f32)a * weight;
+                    gSum += (f32)g * (f32)a * weight;
+                    bSum += (f32)b * (f32)a * weight;
+                    aSum += (f32)a * weight;
+                    wSum += weight;
+                }
+            }
+
+            if (aSum > 0.0f && wSum > 0.0f) {
+                Uint8 r = (Uint8)lroundf(rSum / aSum);
+                Uint8 g = (Uint8)lroundf(gSum / aSum);
+                Uint8 b = (Uint8)lroundf(bSum / aSum);
+                Uint8 a = (Uint8)lroundf(aSum / wSum);
+
+                row[dx] = SDL_MapRGBA(format, NULL, r, g, b, a);
+            } else {
+                row[dx] = 0;
+            }
+        }
+    }
+
+    return result;
+}
+
+static bool renderer_load_sprite(SDL_Renderer *renderer, const char *basePath, const char *name, f32 radius, FruitSprite *result) {
+    char path[1024];
+    SDL_Surface *surface = NULL;
+
+    if (basePath != NULL) {
+        snprintf(path, sizeof(path), "%sasset/fruit/%s.png", basePath, name);
+        surface = IMG_Load(path);
+    }
+
+    if (surface == NULL) {
+        snprintf(path, sizeof(path), "asset/fruit/%s.png", name);
+        surface = IMG_Load(path);
+    }
+
+    if (surface == NULL) {
+        return false;
+    }
+
+    SDL_Rect box;
+
+    if (!renderer_find_sprite_box(surface, &box)) {
+        SDL_DestroySurface(surface);
+        return false;
+    }
+
+    int width = (int)lroundf(radius * 2.0f);
+    int height = (int)lroundf((f32)width * (f32)box.h / (f32)box.w);
+
+    if (width < 1) width = 1;
+    if (height < 1) height = 1;
+
+    SDL_Surface *scaled = renderer_resample_surface(surface, &box, width, height);
+
+    SDL_DestroySurface(surface);
+
+    if (scaled == NULL) {
+        return false;
+    }
+
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, scaled);
+
+    SDL_DestroySurface(scaled);
+
+    if (texture == NULL) {
+        return false;
+    }
+
+    SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_LINEAR);
+    SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
+
+    result->texture = texture;
+    result->width = (f32)width;
+    result->height = (f32)height;
+    result->tinted = false;
+    return true;
+}
+
+static bool renderer_create_circle_texture(SDL_Renderer *renderer, f32 radius, FruitSprite *result) {
     int size = (int)ceilf(radius * 2.0f + CIRCLE_PADDING * 2.0f);
     SDL_Surface *surface = SDL_CreateSurface(size, size, SDL_PIXELFORMAT_RGBA8888);
 
@@ -74,18 +257,30 @@ static bool renderer_create_circle_texture(SDL_Renderer *renderer, f32 radius, C
     SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
 
     result->texture = texture;
-    result->half = (f32)size * 0.5f;
+    result->width = (f32)size;
+    result->height = (f32)size;
+    result->tinted = true;
     return true;
 }
 
 bool renderer_init(SDL_Renderer *renderer) {
     bool ok = text_init();
+    const char *basePath = SDL_GetBasePath();
 
     for (int type = 0; type < FRUIT_TYPE_COUNT; ++type) {
-        fruitTextures[type].texture = NULL;
-        fruitTextures[type].half = 0.0f;
+        FruitSprite *sprite = &fruitSprites[type];
 
-        if (!renderer_create_circle_texture(renderer, fruit_radius((FruitType)type), &fruitTextures[type])) {
+        sprite->texture = NULL;
+        sprite->width = 0.0f;
+        sprite->height = 0.0f;
+        sprite->tinted = false;
+
+        if (SPRITE_FILES[type] != NULL &&
+            renderer_load_sprite(renderer, basePath, SPRITE_FILES[type], fruit_radius((FruitType)type), sprite)) {
+            continue;
+        }
+
+        if (!renderer_create_circle_texture(renderer, fruit_radius((FruitType)type), sprite)) {
             SDL_Log("과일 텍스처 생성 실패: %s", SDL_GetError());
             ok = false;
         }
@@ -96,11 +291,11 @@ bool renderer_init(SDL_Renderer *renderer) {
 
 void renderer_quit(void) {
     for (int i = 0; i < FRUIT_TYPE_COUNT; ++i) {
-        if (fruitTextures[i].texture != NULL) {
-            SDL_DestroyTexture(fruitTextures[i].texture);
-            fruitTextures[i].texture = NULL;
-            fruitTextures[i].half = 0.0f;
+        if (fruitSprites[i].texture != NULL) {
+            SDL_DestroyTexture(fruitSprites[i].texture);
         }
+
+        fruitSprites[i] = (FruitSprite){0};
     }
 
     text_quit();
@@ -114,20 +309,23 @@ static void renderer_draw_score(SDL_Renderer *renderer, u64 score) {
 }
 
 static void renderer_draw_fruit(SDL_Renderer *renderer, const Fruit *fruit) {
-    const CircleTexture *circle = &fruitTextures[fruit->type];
+    const FruitSprite *sprite = &fruitSprites[fruit->type];
     rgba color = FRUITS_INFOS[fruit->type].color;
 
-    if (circle->texture != NULL) {
+    if (sprite->texture != NULL) {
         SDL_FRect dest = {
-            fruit->pos.x - circle->half,
-            fruit->pos.y - circle->half,
-            circle->half * 2.0f,
-            circle->half * 2.0f,
+            fruit->pos.x - sprite->width * 0.5f,
+            fruit->pos.y - sprite->height * 0.5f,
+            sprite->width,
+            sprite->height,
         };
 
-        SDL_SetTextureColorMod(circle->texture, color.r, color.g, color.b);
-        SDL_SetTextureAlphaMod(circle->texture, color.a);
-        SDL_RenderTexture(renderer, circle->texture, NULL, &dest);
+        if (sprite->tinted) {
+            SDL_SetTextureColorMod(sprite->texture, color.r, color.g, color.b);
+            SDL_SetTextureAlphaMod(sprite->texture, color.a);
+        }
+
+        SDL_RenderTexture(renderer, sprite->texture, NULL, &dest);
         return;
     }
 

@@ -8,6 +8,7 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(SDL3 CONFIG REQUIRED)
+find_package(SDL3_image CONFIG REQUIRED)
 find_package(SDL3_ttf CONFIG REQUIRED)
 
 add_executable(fruits
@@ -23,7 +24,14 @@ add_executable(fruits
 )
 
 target_include_directories(fruits PRIVATE src)
-target_link_libraries(fruits PRIVATE SDL3::SDL3 SDL3_ttf::SDL3_ttf)
+target_link_libraries(fruits PRIVATE SDL3::SDL3 SDL3_image::SDL3_image SDL3_ttf::SDL3_ttf)
+
+add_custom_command(TARGET fruits POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/asset"
+        "$<TARGET_FILE_DIR:fruits>/asset"
+    VERBATIM
+)
 
 if(MSVC)
     target_compile_options(fruits PRIVATE /utf-8)
