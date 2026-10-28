@@ -6,19 +6,20 @@
 #include <stddef.h>
 #include <stdio.h>
 
-static const f32 SCORE_MARGIN_X = 20.0f;
-static const f32 SCORE_MARGIN_Y = 14.0f;
-static const f32 SCORE_SIZE = 32.0f;
-static const rgba SCORE_COLOR = {28, 28, 28, 255};
+static const f32 SCORE_CENTER_Y = 400.0f;
+static const f32 SCORE_MAX_SIZE = 190.0f;
+static const f32 SCORE_FIT_WIDTH = 800.0f;
+static const rgba SCORE_COLOR = {214, 214, 214, 255};
+static const rgba TEXT_COLOR = {28, 28, 28, 255};
 static const rgba LABEL_COLOR = {70, 70, 70, 255};
 static const f32 CIRCLE_PADDING = 1.0f;
 static const Uint8 SPRITE_ALPHA_THRESHOLD = 8;
 
-static const f32 NEXT_CENTER_X = 540.0f;
-static const f32 NEXT_CENTER_Y = 84.0f;
-static const f32 NEXT_MAX_SIZE = 70.0f;
-static const f32 NEXT_LABEL_Y = 16.0f;
-static const f32 NEXT_LABEL_SIZE = 18.0f;
+static const f32 NEXT_CENTER_X = 566.0f;
+static const f32 NEXT_CENTER_Y = 36.0f;
+static const f32 NEXT_MAX_SIZE = 34.0f;
+static const f32 NEXT_LABEL_Y = 4.0f;
+static const f32 NEXT_LABEL_SIZE = 11.0f;
 
 enum {
     CIRCLE_SAMPLES = 8,
@@ -310,11 +311,16 @@ void renderer_quit(void) {
     text_quit();
 }
 
-void renderer_draw_score(SDL_Renderer *renderer, u64 score) {
+static void renderer_draw_score(SDL_Renderer *renderer, u64 score) {
     char text[32];
+    int digits = snprintf(text, sizeof(text), "%llu", (unsigned long long)score);
+    f32 size = SCORE_FIT_WIDTH / (f32)(digits > 0 ? digits : 1);
 
-    snprintf(text, sizeof(text), "%llu", (unsigned long long)score);
-    text_draw_colored(renderer, text, SCORE_MARGIN_X, SCORE_MARGIN_Y, SCORE_SIZE, SCORE_COLOR);
+    if (size > SCORE_MAX_SIZE) {
+        size = SCORE_MAX_SIZE;
+    }
+
+    text_draw_center_middle_colored(renderer, text, (f32)GAME_WIDTH * 0.5f, SCORE_CENTER_Y, size, SCORE_COLOR);
 }
 
 static void renderer_draw_fruit(SDL_Renderer *renderer, const Fruit *fruit) {
@@ -382,10 +388,10 @@ void renderer_draw_game_over(SDL_Renderer *renderer, u64 score) {
     SDL_RenderFillRect(renderer, &cover);
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
 
-    text_draw_centered_colored(renderer, "GAME OVER", (f32)GAME_WIDTH * 0.5f, 296.0f, 58.0f, SCORE_COLOR);
+    text_draw_centered_colored(renderer, "GAME OVER", (f32)GAME_WIDTH * 0.5f, 296.0f, 58.0f, TEXT_COLOR);
 
     snprintf(text, sizeof(text), "SCORE %llu", (unsigned long long)score);
-    text_draw_centered_colored(renderer, text, (f32)GAME_WIDTH * 0.5f, 384.0f, 38.0f, SCORE_COLOR);
+    text_draw_centered_colored(renderer, text, (f32)GAME_WIDTH * 0.5f, 384.0f, 38.0f, TEXT_COLOR);
 
     text_draw_centered_colored(renderer, "PRESS R TO RESTART", (f32)GAME_WIDTH * 0.5f, 452.0f, 24.0f, LABEL_COLOR);
 }
@@ -394,6 +400,8 @@ void renderer_draw(SDL_Renderer *renderer, const PlayerState *state, const Fruit
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     SDL_RenderClear(renderer);
 
+    renderer_draw_score(renderer, (u64)state->scoreShown);
+
     for (size_t i = 0; i < state->fruitsCount; ++i) {
         renderer_draw_fruit(renderer, &state->fruits[i]);
     }
@@ -401,8 +409,6 @@ void renderer_draw(SDL_Renderer *renderer, const PlayerState *state, const Fruit
     if (held != NULL) {
         renderer_draw_fruit(renderer, held);
     }
-
-    renderer_draw_score(renderer, state->score);
 }
 
 void renderer_draw_held(SDL_Renderer *renderer, const Fruit *held) {

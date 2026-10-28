@@ -7,6 +7,7 @@
 
 typedef struct PlayerState {
     u64    score;
+    f32    scoreShown;
     Fruit *fruits;
     size_t fruitsCount;
     size_t fruitsCapacity;

@@ -14,6 +14,8 @@ static const f32 TWO_PI = 6.283185307179586f;
 static const f32 GAME_OVER_HOLD_TIME = 1.2f;
 static const f32 GAME_OVER_SPEED = 400.0f;
 static const f32 GAME_OVER_WARN_TIME = 0.35f;
+static const f32 SCORE_RISE_SPEED = 5.5f;
+static const f32 SCORE_RISE_MIN = 40.0f;
 static const f32 WINDOW_INERTIA_X = 1.2f;
 static const f32 WINDOW_INERTIA_Y = 0.6f;
 static const f32 WINDOW_VELOCITY_SMOOTHING = 0.5f;
@@ -213,6 +215,7 @@ bool game_init(Game *game, SDL_Window *window) {
 static void game_restart(Game *game) {
     game->state.fruitsCount = 0;
     game->state.score = 0;
+    game->state.scoreShown = 0.0f;
     game->held = fruit_make((vec2){GAME_WIDTH * 0.5f, GAME_DROP_LINE_Y}, fruit_get_random_type());
     game->nextType = fruit_get_random_type();
     game->dropCooldown = 0.0f;
@@ -334,8 +337,28 @@ static void game_check_over(Game *game, f32 dt) {
     }
 }
 
+static void game_update_score(Game *game, f32 dt) {
+    f32 target = (f32)game->state.score;
+    f32 diff = target - game->state.scoreShown;
+
+    if (diff <= 0.0f) {
+        game->state.scoreShown = target;
+        return;
+    }
+
+    f32 step = (diff * SCORE_RISE_SPEED + SCORE_RISE_MIN) * dt;
+
+    if (step >= diff) {
+        game->state.scoreShown = target;
+    } else {
+        game->state.scoreShown += step;
+    }
+}
+
 void game_update(Game *game) {
     f64 dt = frame_clock_tick(&game->clock);
+
+    game_update_score(game, (f32)dt);
 
     if (game->gameOver) {
         return;
@@ -374,7 +397,6 @@ void game_draw(const Game *game, SDL_Renderer *renderer) {
 
     if (game->gameOver) {
         renderer_draw_game_over(renderer, game->state.score);
-        renderer_draw_score(renderer, game->state.score);
     }
 
     SDL_RenderPresent(renderer);

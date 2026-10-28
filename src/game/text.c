@@ -186,6 +186,27 @@ void text_draw_centered_colored(SDL_Renderer *renderer, const char *text, f32 ce
     SDL_RenderTexture(renderer, entry->texture, NULL, &dest);
 }
 
+void text_draw_center_middle_colored(SDL_Renderer *renderer, const char *text, f32 centerX, f32 centerY, f32 size, rgba color) {
+    if (text_font == NULL || text == NULL) {
+        return;
+    }
+
+    TextEntry *entry = text_lookup(renderer, text, size, color);
+
+    if (entry == NULL) {
+        return;
+    }
+
+    SDL_FRect dest = {
+        centerX - entry->width * 0.5f,
+        centerY - entry->height * 0.5f,
+        entry->width,
+        entry->height,
+    };
+
+    SDL_RenderTexture(renderer, entry->texture, NULL, &dest);
+}
+
 void text_draw_sized(SDL_Renderer *renderer, const char *text, f32 x, f32 y, f32 size) {
     text_draw_colored(renderer, text, x, y, size, RGBA_WHITE);
 }

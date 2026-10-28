@@ -166,6 +166,7 @@ bool state_init(PlayerState *state) {
     state->fruitsCapacity = 0;
     state->fruitsCount = 0;
     state->score = 0;
+    state->scoreShown = 0.0f;
 
     return state_allocate(state, STATE_FRUIT_LIST_DEFAULT_SIZE);
 }
