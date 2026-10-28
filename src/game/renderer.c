@@ -31,7 +31,6 @@ static const char *const SPRITE_FILES[FRUIT_TYPE_COUNT] = {
     [FRUIT_TYPE_ORANGE] = "40",
     [FRUIT_TYPE_PEAR] = "01",
     [FRUIT_TYPE_PEACH] = "11",
-    [FRUIT_TYPE_KIWI] = "21",
     [FRUIT_TYPE_MELON] = "31",
     [FRUIT_TYPE_WATERMELON] = "41",
 };
