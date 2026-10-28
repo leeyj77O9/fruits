@@ -1,21 +1,20 @@
 #include "game/fruit.h"
 #include <stdlib.h>
 
-#define FRUIT_PIXELS_PER_UNIT 26.0f
 #define FRUIT_RANDOM_TYPE_COUNT 5
 
 static u32 fruit_next_id = 0;
 
 const FruitInfo FRUITS_INFOS[FRUIT_TYPE_COUNT] = {
-    { "Grape",      1.0f, RGBA_PURPLE },
-    { "Strawberry", 1.5f, RGBA_RED },
-    { "Lemon",      2.0f, RGBA_YELLOW },
-    { "Apple",      2.5f, RGBA_RED },
-    { "Orange",     3.0f, RGBA_ORANGE },
-    { "Pear",       3.5f, RGBA_YELLOW_GREEN },
-    { "Peach",      4.0f, RGBA_PINK },
-    { "Melon",      5.0f, RGBA_GREEN },
-    { "Watermelon", 5.5f, RGBA_DARK_GREEN },
+    { "Grape",       20.0f, RGBA_PURPLE },
+    { "Strawberry",  25.0f, RGBA_RED },
+    { "Lemon",       31.0f, RGBA_YELLOW },
+    { "Apple",       38.0f, RGBA_RED },
+    { "Orange",      47.0f, RGBA_ORANGE },
+    { "Pear",        58.0f, RGBA_YELLOW_GREEN },
+    { "Peach",       72.0f, RGBA_PINK },
+    { "Melon",       89.0f, RGBA_GREEN },
+    { "Watermelon", 110.0f, RGBA_DARK_GREEN },
 };
 
 _Static_assert(sizeof(FRUITS_INFOS) / sizeof(FRUITS_INFOS[0]) == FRUIT_TYPE_COUNT,
@@ -38,7 +37,7 @@ Fruit fruit_make(vec2 pos, FruitType type) {
 }
 
 f32 fruit_radius(FruitType type) {
-    return FRUITS_INFOS[type].radius * FRUIT_PIXELS_PER_UNIT;
+    return FRUITS_INFOS[type].radius;
 }
 
 bool fruit_equals_id(const Fruit *a, u32 id) {
