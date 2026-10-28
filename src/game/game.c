@@ -50,7 +50,8 @@ static void game_clamp_held(Game *game) {
 static void game_drop(Game *game) {
     state_add_fruit(&game->state, game->held.pos, game->held.type);
 
-    game->held = fruit_make((vec2){game->held.pos.x, GAME_DROP_LINE_Y}, fruit_get_random_type());
+    game->held = fruit_make((vec2){game->held.pos.x, GAME_DROP_LINE_Y}, game->nextType);
+    game->nextType = fruit_get_random_type();
     game_clamp_held(game);
 }
 
@@ -190,6 +191,7 @@ bool game_init(Game *game, SDL_Window *window) {
     srand((unsigned int)SDL_GetTicks());
 
     game->held = fruit_make((vec2){GAME_WIDTH * 0.5f, GAME_DROP_LINE_Y}, fruit_get_random_type());
+    game->nextType = fruit_get_random_type();
     game->dropCooldown = 0.0f;
     game->overTime = 0.0f;
     game->gameOver = false;
@@ -212,6 +214,7 @@ static void game_restart(Game *game) {
     game->state.fruitsCount = 0;
     game->state.score = 0;
     game->held = fruit_make((vec2){GAME_WIDTH * 0.5f, GAME_DROP_LINE_Y}, fruit_get_random_type());
+    game->nextType = fruit_get_random_type();
     game->dropCooldown = 0.0f;
     game->overTime = 0.0f;
     game->gameOver = false;
@@ -366,6 +369,7 @@ void game_draw(const Game *game, SDL_Renderer *renderer) {
 
     if (!game->gameOver) {
         renderer_draw_held(renderer, held);
+        renderer_draw_next(renderer, game->nextType);
     }
 
     if (game->gameOver) {

@@ -11,6 +11,12 @@ static const f32 SCORE_MARGIN_Y = 14.0f;
 static const f32 CIRCLE_PADDING = 1.0f;
 static const Uint8 SPRITE_ALPHA_THRESHOLD = 8;
 
+static const f32 NEXT_CENTER_X = 540.0f;
+static const f32 NEXT_CENTER_Y = 84.0f;
+static const f32 NEXT_MAX_SIZE = 70.0f;
+static const f32 NEXT_LABEL_Y = 16.0f;
+static const f32 NEXT_LABEL_SIZE = 18.0f;
+
 enum {
     CIRCLE_SAMPLES = 8,
     CIRCLE_SAMPLE_COUNT = CIRCLE_SAMPLES * CIRCLE_SAMPLES,
@@ -400,4 +406,34 @@ void renderer_draw_held(SDL_Renderer *renderer, const Fruit *held) {
     if (held != NULL) {
         renderer_draw_fruit(renderer, held);
     }
+}
+
+void renderer_draw_next(SDL_Renderer *renderer, FruitType type) {
+    const FruitSprite *sprite = &fruitSprites[type];
+
+    text_draw_centered(renderer, "NEXT", NEXT_CENTER_X, NEXT_LABEL_Y, NEXT_LABEL_SIZE);
+
+    if (sprite->texture == NULL) {
+        return;
+    }
+
+    f32 longest = sprite->width > sprite->height ? sprite->width : sprite->height;
+    f32 scale = NEXT_MAX_SIZE / longest;
+    f32 width = sprite->width * scale;
+    f32 height = sprite->height * scale;
+    SDL_FRect dest = {
+        NEXT_CENTER_X - width * 0.5f,
+        NEXT_CENTER_Y - height * 0.5f,
+        width,
+        height,
+    };
+
+    if (sprite->tinted) {
+        rgba color = FRUITS_INFOS[type].color;
+
+        SDL_SetTextureColorMod(sprite->texture, color.r, color.g, color.b);
+        SDL_SetTextureAlphaMod(sprite->texture, color.a);
+    }
+
+    SDL_RenderTexture(renderer, sprite->texture, NULL, &dest);
 }

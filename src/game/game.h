@@ -30,6 +30,7 @@ typedef struct Game {
     PlayerState  state;
     FrameClock   clock;
     Fruit        held;
+    FruitType    nextType;
     f32          dropCooldown;
     f32          overTime;
     bool         gameOver;
