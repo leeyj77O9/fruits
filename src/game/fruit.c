@@ -30,6 +30,8 @@ Fruit fruit_make(vec2 pos, FruitType type) {
         .pos = pos,
         .vel = vec2_zero(),
         .r = fruit_radius(type),
+        .angle = 0.0f,
+        .lastX = pos.x,
         .type = type,
         .sleeping = false,
         .sleepFrames = 0,

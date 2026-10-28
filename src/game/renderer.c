@@ -325,7 +325,14 @@ static void renderer_draw_fruit(SDL_Renderer *renderer, const Fruit *fruit) {
             SDL_SetTextureAlphaMod(sprite->texture, color.a);
         }
 
-        SDL_RenderTexture(renderer, sprite->texture, NULL, &dest);
+        if (fabsf(fruit->angle) > 0.0001f) {
+            SDL_FPoint center = {sprite->width * 0.5f, sprite->height * 0.5f};
+
+            SDL_RenderTextureRotated(renderer, sprite->texture, NULL, &dest, (double)(fruit->angle * 57.2957795f), &center, SDL_FLIP_NONE);
+        } else {
+            SDL_RenderTexture(renderer, sprite->texture, NULL, &dest);
+        }
+
         return;
     }
 

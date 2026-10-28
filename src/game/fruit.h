@@ -25,6 +25,8 @@ typedef struct Fruit {
     vec2      pos;
     vec2      vel;
     f32       r;
+    f32       angle;
+    f32       lastX;
     FruitType type;
     bool      sleeping;
     u16       sleepFrames;

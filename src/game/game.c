@@ -9,6 +9,9 @@
 static const f32 DROP_COOLDOWN = 0.8f;
 static const f32 HELD_MOVE_SPEED = 600.0f;
 static const f32 HELD_MOVE_MAX_DT = 0.05f;
+static const f32 ROLL_SETTLE_SPEED = 30.0f;
+static const f32 ROLL_SETTLE_RATE = 8.0f;
+static const f32 TWO_PI = 6.283185307179586f;
 static const f32 WINDOW_INERTIA_X = 1.2f;
 static const f32 WINDOW_INERTIA_Y = 0.6f;
 static const f32 WINDOW_VELOCITY_SMOOTHING = 0.5f;
@@ -253,6 +256,37 @@ void game_handle_event(Game *game, const SDL_Event *event) {
     }
 }
 
+static void game_update_rotation(Game *game, f32 dt) {
+    if (dt <= 0.0f) {
+        return;
+    }
+
+    for (size_t i = 0; i < game->state.fruitsCount; ++i) {
+        Fruit *fruit = &game->state.fruits[i];
+        f32 dx = fruit->pos.x - fruit->lastX;
+        f32 speed = fabsf(dx) / dt;
+
+        if (fabsf(dx) > fruit->r) {
+            dx = 0.0f;
+            speed = 0.0f;
+        }
+
+        fruit->angle += dx / fruit->r;
+        fruit->lastX = fruit->pos.x;
+
+        if (speed < ROLL_SETTLE_SPEED) {
+            f32 target = roundf(fruit->angle / TWO_PI) * TWO_PI;
+            f32 blend = 1.0f - expf(-ROLL_SETTLE_RATE * dt);
+
+            fruit->angle += (target - fruit->angle) * blend;
+        }
+
+        if (fruit->angle > TWO_PI || fruit->angle < -TWO_PI) {
+            fruit->angle = fmodf(fruit->angle, TWO_PI);
+        }
+    }
+}
+
 void game_update(Game *game) {
     f64 dt = frame_clock_tick(&game->clock);
 
@@ -271,6 +305,7 @@ void game_update(Game *game) {
     while (frame_clock_fixed_step(&game->clock, GAME_PHYSICS_STEP)) {
         collider_step(&game->state, game->bounds, (f32)GAME_PHYSICS_STEP);
         state_merge_touching(&game->state);
+        game_update_rotation(game, (f32)GAME_PHYSICS_STEP);
     }
 }
 
