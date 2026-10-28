@@ -38,7 +38,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
     SDL_SetRenderVSync(app->renderer, 1);
 
-    if (!renderer_init()) {
+    if (!renderer_init(app->renderer)) {
         SDL_Log("렌더링 초기화에 실패했습니다: %s", SDL_GetError());
     }
 
