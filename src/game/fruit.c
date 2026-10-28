@@ -1,7 +1,7 @@
 #include "game/fruit.h"
 #include <stdlib.h>
 
-#define FRUIT_PIXELS_PER_UNIT 13.0f
+#define FRUIT_PIXELS_PER_UNIT 26.0f
 #define FRUIT_RANDOM_TYPE_COUNT 5
 
 static u32 fruit_next_id = 0;

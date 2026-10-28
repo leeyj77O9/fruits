@@ -7,6 +7,7 @@
 #include "game/renderer.h"
 
 static const f32 DROP_COOLDOWN = 0.8f;
+static const f32 FLOOR_MARGIN = 6.0f;
 static const f32 HELD_MOVE_SPEED = 600.0f;
 static const f32 HELD_MOVE_MAX_DT = 0.05f;
 static const f32 TWO_PI = 6.283185307179586f;
@@ -168,7 +169,7 @@ bool game_init(Game *game, SDL_Window *window) {
         return false;
     }
 
-    game->bounds = (rect){0.0f, 0.0f, GAME_WIDTH, GAME_HEIGHT};
+    game->bounds = (rect){0.0f, 0.0f, GAME_WIDTH, GAME_HEIGHT - FLOOR_MARGIN};
     game->window = window;
 
     game->windowMotion.x = 0;
