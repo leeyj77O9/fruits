@@ -9,8 +9,6 @@
 static const f32 DROP_COOLDOWN = 0.8f;
 static const f32 HELD_MOVE_SPEED = 600.0f;
 static const f32 HELD_MOVE_MAX_DT = 0.05f;
-static const f32 ROLL_SETTLE_SPEED = 30.0f;
-static const f32 ROLL_SETTLE_RATE = 8.0f;
 static const f32 TWO_PI = 6.283185307179586f;
 static const f32 WINDOW_INERTIA_X = 1.2f;
 static const f32 WINDOW_INERTIA_Y = 0.6f;
@@ -264,22 +262,13 @@ static void game_update_rotation(Game *game, f32 dt) {
     for (size_t i = 0; i < game->state.fruitsCount; ++i) {
         Fruit *fruit = &game->state.fruits[i];
         f32 dx = fruit->pos.x - fruit->lastX;
-        f32 speed = fabsf(dx) / dt;
 
         if (fabsf(dx) > fruit->r) {
             dx = 0.0f;
-            speed = 0.0f;
         }
 
         fruit->angle += dx / fruit->r;
         fruit->lastX = fruit->pos.x;
-
-        if (speed < ROLL_SETTLE_SPEED) {
-            f32 target = roundf(fruit->angle / TWO_PI) * TWO_PI;
-            f32 blend = 1.0f - expf(-ROLL_SETTLE_RATE * dt);
-
-            fruit->angle += (target - fruit->angle) * blend;
-        }
 
         if (fruit->angle > TWO_PI || fruit->angle < -TWO_PI) {
             fruit->angle = fmodf(fruit->angle, TWO_PI);
