@@ -14,6 +14,7 @@ find_package(SDL3_ttf CONFIG REQUIRED)
 add_executable(fruits
     src/main.c
     src/game/collider.c
+    src/game/effect.c
     src/game/frame_clock.c
     src/game/fruit.c
     src/game/game.c

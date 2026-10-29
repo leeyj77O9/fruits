@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <SDL3/SDL.h>
 
+#include "game/effect.h"
 #include "game/frame_clock.h"
 #include "game/fruit.h"
 #include "game/state.h"
@@ -36,6 +37,7 @@ typedef struct Game {
     bool         gameOver;
     bool         moveLeft;
     bool         moveRight;
+    EffectPool   effects;
     rect         bounds;
     SDL_Window  *window;
     WindowMotion windowMotion;

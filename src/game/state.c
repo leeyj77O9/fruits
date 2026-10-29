@@ -155,6 +155,10 @@ static void state_merge_fruit(PlayerState *state, u32 id1, u32 id2) {
     state_wake_around(state, pos, survivor->r);
 
     state->score += state_merge_score(nextType);
+
+    if (state->mergeEventsCount < STATE_MERGE_EVENT_MAX) {
+        state->mergeEvents[state->mergeEventsCount++] = (MergeEvent){pos, nextType};
+    }
 }
 
 bool state_init(PlayerState *state) {
@@ -167,6 +171,7 @@ bool state_init(PlayerState *state) {
     state->fruitsCount = 0;
     state->score = 0;
     state->scoreShown = 0.0f;
+    state->mergeEventsCount = 0;
 
     return state_allocate(state, STATE_FRUIT_LIST_DEFAULT_SIZE);
 }

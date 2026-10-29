@@ -200,6 +200,8 @@ bool game_init(Game *game, SDL_Window *window) {
     game->moveLeft = false;
     game->moveRight = false;
 
+    effect_pool_clear(&game->effects);
+
     int x = 0;
     int y = 0;
 
@@ -224,6 +226,7 @@ static void game_restart(Game *game) {
     game->moveLeft = false;
     game->moveRight = false;
 
+    effect_pool_clear(&game->effects);
     game_clamp_held(game);
     frame_clock_init(&game->clock);
 }
@@ -337,6 +340,16 @@ static void game_check_over(Game *game, f32 dt) {
     }
 }
 
+static void game_spawn_merge_effects(Game *game) {
+    for (size_t i = 0; i < game->state.mergeEventsCount; ++i) {
+        const MergeEvent *event = &game->state.mergeEvents[i];
+
+        effect_pool_spawn_merge(&game->effects, event->pos, FRUITS_INFOS[event->type].color, fruit_radius(event->type));
+    }
+
+    game->state.mergeEventsCount = 0;
+}
+
 static void game_update_score(Game *game, f32 dt) {
     f32 target = (f32)game->state.score;
     f32 diff = target - game->state.scoreShown;
@@ -359,6 +372,7 @@ void game_update(Game *game) {
     f64 dt = frame_clock_tick(&game->clock);
 
     game_update_score(game, (f32)dt);
+    effect_pool_update(&game->effects, (f32)dt);
 
     if (game->gameOver) {
         return;
@@ -379,6 +393,7 @@ void game_update(Game *game) {
     while (frame_clock_fixed_step(&game->clock, GAME_PHYSICS_STEP)) {
         collider_step(&game->state, game->bounds, (f32)GAME_PHYSICS_STEP);
         state_merge_touching(&game->state);
+        game_spawn_merge_effects(game);
         game_update_rotation(game, (f32)GAME_PHYSICS_STEP);
         game_check_over(game, (f32)GAME_PHYSICS_STEP);
     }
@@ -388,6 +403,7 @@ void game_draw(const Game *game, SDL_Renderer *renderer) {
     const Fruit *held = game->dropCooldown > 0.0f ? NULL : &game->held;
 
     renderer_draw(renderer, &game->state, NULL);
+    renderer_draw_effects(renderer, &game->effects);
     renderer_draw_guide(renderer, game->overTime >= GAME_OVER_WARN_TIME);
 
     if (!game->gameOver) {

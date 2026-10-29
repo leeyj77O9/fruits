@@ -16,6 +16,9 @@ static const f32 SCORE_LABEL_SIZE = 12.0f;
 static const f32 SCORE_VALUE_Y = 26.0f;
 static const f32 SCORE_VALUE_SIZE = 34.0f;
 static const f32 SCORE_VALUE_SMALL_SIZE = 26.0f;
+static const f32 EFFECT_RING_THICKNESS_SCALE = 0.09f;
+static const f32 EFFECT_RING_THICKNESS_MIN = 1.5f;
+static const f32 EFFECT_RING_THICKNESS_MAX = 12.0f;
 static const f32 CIRCLE_PADDING = 1.0f;
 static const Uint8 SPRITE_ALPHA_THRESHOLD = 8;
 
@@ -363,6 +366,69 @@ static void renderer_draw_fruit(SDL_Renderer *renderer, const Fruit *fruit) {
             }
         }
     }
+}
+
+void renderer_draw_effects(SDL_Renderer *renderer, const EffectPool *pool) {
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+
+    for (int i = 0; i < EFFECT_POOL_SIZE; ++i) {
+        const Effect *effect = &pool->items[i];
+
+        if (!effect->active) {
+            continue;
+        }
+
+        f32 fade = effect->life / effect->duration;
+
+        if (fade < 0.0f) {
+            fade = 0.0f;
+        }
+
+        Uint8 alpha = (Uint8)lroundf((effect->spark ? 255.0f : 240.0f) * fade);
+
+        SDL_SetRenderDrawColor(renderer, effect->color.r, effect->color.g, effect->color.b, alpha);
+
+        if (effect->spark) {
+            SDL_FRect dot = {
+                effect->pos.x - effect->radius,
+                effect->pos.y - effect->radius,
+                effect->radius * 2.0f,
+                effect->radius * 2.0f,
+            };
+
+            SDL_RenderFillRect(renderer, &dot);
+            continue;
+        }
+
+        f32 radius = effect->radius;
+        f32 thickness = radius * EFFECT_RING_THICKNESS_SCALE + EFFECT_RING_THICKNESS_MIN;
+        f32 inner = radius - thickness;
+        int extent = (int)ceilf(radius);
+
+        if (thickness > EFFECT_RING_THICKNESS_MAX) {
+            thickness = EFFECT_RING_THICKNESS_MAX;
+            inner = radius - thickness;
+        }
+
+        for (int offset = -extent; offset <= extent; ++offset) {
+            f32 y = (f32)offset;
+            f32 outerSq = radius * radius - y * y;
+
+            if (outerSq <= 0.0f) {
+                continue;
+            }
+
+            f32 outerX = sqrtf(outerSq);
+            f32 innerSq = inner * inner - y * y;
+            f32 innerX = innerSq > 0.0f ? sqrtf(innerSq) : 0.0f;
+            f32 lineY = effect->pos.y + y;
+
+            SDL_RenderLine(renderer, effect->pos.x - outerX, lineY, effect->pos.x - innerX, lineY);
+            SDL_RenderLine(renderer, effect->pos.x + innerX, lineY, effect->pos.x + outerX, lineY);
+        }
+    }
+
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
 }
 
 void renderer_draw_guide(SDL_Renderer *renderer, bool danger) {
