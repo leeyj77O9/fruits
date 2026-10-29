@@ -9,13 +9,12 @@
 static const rgba TEXT_COLOR = {28, 28, 28, 255};
 static const rgba LABEL_COLOR = {70, 70, 70, 255};
 static const rgba NEXT_LABEL_COLOR = {158, 158, 158, 255};
+static const rgba SCORE_VALUE_COLOR = {226, 228, 233, 255};
 
-static const f32 SCORE_X = 22.0f;
-static const f32 SCORE_LABEL_Y = 12.0f;
-static const f32 SCORE_LABEL_SIZE = 12.0f;
-static const f32 SCORE_VALUE_Y = 26.0f;
-static const f32 SCORE_VALUE_SIZE = 34.0f;
-static const f32 SCORE_VALUE_SMALL_SIZE = 26.0f;
+static const f32 SCORE_X = 20.0f;
+static const f32 SCORE_VALUE_Y = 10.0f;
+static const f32 SCORE_VALUE_SIZE = 56.0f;
+static const f32 SCORE_VALUE_SMALL_SIZE = 40.0f;
 static const f32 EFFECT_RING_THICKNESS_SCALE = 0.09f;
 static const f32 EFFECT_RING_THICKNESS_MIN = 1.5f;
 static const f32 EFFECT_RING_THICKNESS_MAX = 12.0f;
@@ -323,8 +322,7 @@ static void renderer_draw_score(SDL_Renderer *renderer, u64 score) {
     int digits = snprintf(text, sizeof(text), "%llu", (unsigned long long)score);
     f32 size = digits > 5 ? SCORE_VALUE_SMALL_SIZE : SCORE_VALUE_SIZE;
 
-    text_draw_colored(renderer, "SCORE", SCORE_X, SCORE_LABEL_Y, SCORE_LABEL_SIZE, LABEL_COLOR);
-    text_draw_colored(renderer, text, SCORE_X, SCORE_VALUE_Y, size, TEXT_COLOR);
+    text_draw_colored(renderer, text, SCORE_X, SCORE_VALUE_Y, size, SCORE_VALUE_COLOR);
 }
 
 static void renderer_draw_fruit(SDL_Renderer *renderer, const Fruit *fruit) {
