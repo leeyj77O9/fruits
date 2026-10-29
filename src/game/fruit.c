@@ -11,7 +11,6 @@ const FruitInfo FRUITS_INFOS[FRUIT_TYPE_COUNT] = {
     { "Lemon",       31.0f, RGBA_YELLOW },
     { "Apple",       38.0f, RGBA_RED },
     { "Orange",      47.0f, RGBA_ORANGE },
-    { "Pear",        58.0f, RGBA_YELLOW_GREEN },
     { "Peach",       72.0f, RGBA_PINK },
     { "Melon",       89.0f, RGBA_GREEN },
     { "Watermelon", 110.0f, RGBA_DARK_GREEN },
