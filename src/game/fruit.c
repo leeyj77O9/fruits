@@ -44,7 +44,7 @@ bool fruit_equals_id(const Fruit *a, u32 id) {
 }
 
 bool fruit_can_combine(const Fruit *a, const Fruit *b) {
-    return !fruit_is_max_type(a->type) && a->type == b->type;
+    return a->type == b->type;
 }
 
 bool fruit_is_max_type(FruitType type) {

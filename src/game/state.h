@@ -12,6 +12,7 @@ enum {
 typedef struct MergeEvent {
     vec2      pos;
     FruitType type;
+    bool      final;
 } MergeEvent;
 
 typedef struct PlayerState {

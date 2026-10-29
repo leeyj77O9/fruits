@@ -16,6 +16,7 @@ static const f32 GAME_OVER_SPEED = 400.0f;
 static const f32 GAME_OVER_WARN_TIME = 0.35f;
 static const f32 SCORE_RISE_SPEED = 5.5f;
 static const f32 SCORE_RISE_MIN = 40.0f;
+static const f32 GAME_FINAL_MERGE_RADIUS_SCALE = 1.25f;
 static const f32 WINDOW_INERTIA_X = 1.2f;
 static const f32 WINDOW_INERTIA_Y = 0.6f;
 static const f32 WINDOW_VELOCITY_SMOOTHING = 0.5f;
@@ -344,7 +345,13 @@ static void game_spawn_merge_effects(Game *game) {
     for (size_t i = 0; i < game->state.mergeEventsCount; ++i) {
         const MergeEvent *event = &game->state.mergeEvents[i];
 
-        effect_pool_spawn_merge(&game->effects, event->pos, FRUITS_INFOS[event->type].color, fruit_radius(event->type));
+        f32 radius = fruit_radius(event->type);
+
+        if (event->final) {
+            radius *= GAME_FINAL_MERGE_RADIUS_SCALE;
+        }
+
+        effect_pool_spawn_merge(&game->effects, event->pos, FRUITS_INFOS[event->type].color, radius);
     }
 
     game->state.mergeEventsCount = 0;

@@ -9,6 +9,7 @@ static const size_t STATE_FRUIT_LIST_GROWTH = 2;
 static const size_t STATE_INDEX_NONE = (size_t)-1;
 static const f32 STATE_MERGE_DISTANCE = 1.0f;
 static const int STATE_MERGE_MAX_PER_STEP = 64;
+static const u64 STATE_FINAL_MERGE_SCORE = 160;
 
 static bool state_allocate(PlayerState *state, size_t capacity) {
     Fruit *fruits = malloc(sizeof(Fruit) * capacity);
@@ -128,7 +129,23 @@ static void state_merge_fruit(PlayerState *state, u32 id1, u32 id2) {
 
     vec2 pos = vec2_scale(vec2_add(a->pos, b->pos), 0.5f);
     vec2 vel = vec2_scale(vec2_add(a->vel, b->vel), 0.5f);
-    FruitType nextType = (FruitType)(a->type + 1);
+    FruitType mergedType = a->type;
+    bool final = fruit_is_max_type(mergedType);
+    FruitType nextType = final ? mergedType : (FruitType)(mergedType + 1);
+
+    if (final) {
+        state_remove_fruit(state, id1);
+        state_remove_fruit(state, id2);
+
+        state->score += STATE_FINAL_MERGE_SCORE;
+        state_wake_around(state, pos, fruit_radius(mergedType));
+
+        if (state->mergeEventsCount < STATE_MERGE_EVENT_MAX) {
+            state->mergeEvents[state->mergeEventsCount++] = (MergeEvent){pos, mergedType, true};
+        }
+
+        return;
+    }
 
     u32 survivorId = a->pos.y < b->pos.y ? id1 : id2;
     u32 removedId = survivorId == id1 ? id2 : id1;
@@ -157,7 +174,7 @@ static void state_merge_fruit(PlayerState *state, u32 id1, u32 id2) {
     state->score += state_merge_score(nextType);
 
     if (state->mergeEventsCount < STATE_MERGE_EVENT_MAX) {
-        state->mergeEvents[state->mergeEventsCount++] = (MergeEvent){pos, nextType};
+        state->mergeEvents[state->mergeEventsCount++] = (MergeEvent){pos, nextType, false};
     }
 }
 
