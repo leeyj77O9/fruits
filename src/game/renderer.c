@@ -11,10 +11,25 @@ static const rgba LABEL_COLOR = {70, 70, 70, 255};
 static const rgba NEXT_LABEL_COLOR = {158, 158, 158, 255};
 static const rgba SCORE_VALUE_COLOR = {226, 228, 233, 255};
 
-static const f32 SCORE_X = 20.0f;
+static const f32 SCORE_X = 26.0f;
 static const f32 SCORE_VALUE_Y = 10.0f;
 static const f32 SCORE_VALUE_SIZE = 56.0f;
 static const f32 SCORE_VALUE_SMALL_SIZE = 40.0f;
+static const f32 SCORE_PULSE_DURATION = 0.65f;
+static const f32 SCORE_PULSE_ATTACK = 0.55f;
+static const f32 SCORE_PULSE_FREQUENCY = 15.0f;
+static const f32 SCORE_PULSE_DAMPING = 5.2f;
+static const f32 SCORE_PULSE_CENTER_BIAS = 0.55f;
+static const f32 SCORE_ECHO_BLOOM = 0.04f;
+static const f32 SCORE_ECHO_SCALES[] = {0.32f, 0.25f, 0.18f, 0.11f, 0.05f};
+static const f32 SCORE_ECHO_DAMPINGS[] = {2.4f, 3.1f, 3.9f, 4.8f, 5.8f};
+static const rgba SCORE_ECHO_COLORS[] = {
+    {242, 243, 247, 255},
+    {239, 240, 244, 255},
+    {236, 238, 242, 255},
+    {233, 235, 240, 255},
+    {229, 231, 236, 255},
+};
 static const f32 EFFECT_RING_THICKNESS_SCALE = 0.09f;
 static const f32 EFFECT_RING_THICKNESS_MIN = 1.5f;
 static const f32 EFFECT_RING_THICKNESS_MAX = 12.0f;
@@ -317,12 +332,52 @@ void renderer_quit(void) {
     text_quit();
 }
 
-static void renderer_draw_score(SDL_Renderer *renderer, u64 score) {
+static f32 renderer_score_pulse_scale(f32 time) {
+    if (time >= SCORE_PULSE_DURATION) {
+        return 1.0f;
+    }
+
+    f32 wave = expf(-SCORE_PULSE_DAMPING * time) * sinf(SCORE_PULSE_FREQUENCY * time);
+
+    return fmaxf(1.0f, 1.0f + SCORE_PULSE_ATTACK * wave);
+}
+
+static f32 renderer_score_echo_scale(f32 time, f32 amount, f32 damping) {
+    if (time >= SCORE_PULSE_DURATION) {
+        return 1.0f;
+    }
+
+    f32 progress = time / SCORE_PULSE_DURATION;
+    f32 bloom = 1.0f - expf(-time / SCORE_ECHO_BLOOM);
+    f32 window = 1.0f - progress * progress * progress * progress;
+
+    return 1.0f + amount * bloom * window * expf(-damping * time);
+}
+
+static void renderer_draw_score_text(SDL_Renderer *renderer, const char *text, f32 baseSize, f32 baseWidth, f32 scale, rgba color) {
+    f32 size = lroundf(baseSize * scale);
+    f32 width = text_measure(text, size);
+    f32 x = SCORE_X + (baseWidth - width) * 0.5f;
+    f32 y = SCORE_VALUE_Y - (size - baseSize) * SCORE_PULSE_CENTER_BIAS;
+
+    text_draw_colored(renderer, text, x, y, size, color);
+}
+
+static void renderer_draw_score(SDL_Renderer *renderer, u64 score, f32 pulseTime) {
     char text[32];
     int digits = snprintf(text, sizeof(text), "%llu", (unsigned long long)score);
-    f32 size = digits > 5 ? SCORE_VALUE_SMALL_SIZE : SCORE_VALUE_SIZE;
+    f32 baseSize = digits > 5 ? SCORE_VALUE_SMALL_SIZE : SCORE_VALUE_SIZE;
+    f32 baseWidth = text_measure(text, baseSize);
 
-    text_draw_colored(renderer, text, SCORE_X, SCORE_VALUE_Y, size, SCORE_VALUE_COLOR);
+    for (size_t i = 0; i < sizeof(SCORE_ECHO_SCALES) / sizeof(SCORE_ECHO_SCALES[0]); ++i) {
+        f32 scale = renderer_score_echo_scale(pulseTime, SCORE_ECHO_SCALES[i], SCORE_ECHO_DAMPINGS[i]);
+
+        if (scale > 1.0001f) {
+            renderer_draw_score_text(renderer, text, baseSize, baseWidth, scale, SCORE_ECHO_COLORS[i]);
+        }
+    }
+
+    renderer_draw_score_text(renderer, text, baseSize, baseWidth, renderer_score_pulse_scale(pulseTime), SCORE_VALUE_COLOR);
 }
 
 static void renderer_draw_fruit(SDL_Renderer *renderer, const Fruit *fruit) {
@@ -465,7 +520,7 @@ void renderer_draw(SDL_Renderer *renderer, const PlayerState *state, const Fruit
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     SDL_RenderClear(renderer);
 
-    renderer_draw_score(renderer, (u64)state->scoreShown);
+    renderer_draw_score(renderer, (u64)state->scoreShown, state->scorePulseTime);
 
     for (size_t i = 0; i < state->fruitsCount; ++i) {
         renderer_draw_fruit(renderer, &state->fruits[i]);

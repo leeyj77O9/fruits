@@ -16,6 +16,7 @@ static const f32 GAME_OVER_SPEED = 400.0f;
 static const f32 GAME_OVER_WARN_TIME = 0.35f;
 static const f32 SCORE_RISE_SPEED = 5.5f;
 static const f32 SCORE_RISE_MIN = 40.0f;
+static const f32 SCORE_PULSE_TIME_MAX = 1.0f;
 static const f32 GAME_FINAL_MERGE_RADIUS_SCALE = 1.25f;
 static const f32 WINDOW_INERTIA_X = 1.2f;
 static const f32 WINDOW_INERTIA_Y = 0.6f;
@@ -219,6 +220,7 @@ static void game_restart(Game *game) {
     game->state.fruitsCount = 0;
     game->state.score = 0;
     game->state.scoreShown = 0.0f;
+    game->state.scorePulseTime = 0.0f;
     game->held = fruit_make((vec2){GAME_WIDTH * 0.5f, GAME_DROP_LINE_Y}, fruit_get_random_type());
     game->nextType = fruit_get_random_type();
     game->dropCooldown = 0.0f;
@@ -358,6 +360,12 @@ static void game_spawn_merge_effects(Game *game) {
 }
 
 static void game_update_score(Game *game, f32 dt) {
+    game->state.scorePulseTime += dt;
+
+    if (game->state.scorePulseTime > SCORE_PULSE_TIME_MAX) {
+        game->state.scorePulseTime = SCORE_PULSE_TIME_MAX;
+    }
+
     f32 target = (f32)game->state.score;
     f32 diff = target - game->state.scoreShown;
 

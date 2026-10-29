@@ -18,6 +18,7 @@ typedef struct MergeEvent {
 typedef struct PlayerState {
     u64        score;
     f32        scoreShown;
+    f32        scorePulseTime;
     Fruit     *fruits;
     size_t     fruitsCount;
     size_t     fruitsCapacity;

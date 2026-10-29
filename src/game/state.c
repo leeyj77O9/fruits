@@ -81,6 +81,11 @@ static u64 state_merge_score(FruitType type) {
     return (u64)(type + 1) * 10;
 }
 
+static void state_add_score(PlayerState *state, u64 amount) {
+    state->score += amount;
+    state->scorePulseTime = 0.0f;
+}
+
 static void state_wake_around(PlayerState *state, vec2 pos, f32 radius) {
     for (size_t i = 0; i < state->fruitsCount; ++i) {
         Fruit *fruit = &state->fruits[i];
@@ -137,7 +142,7 @@ static void state_merge_fruit(PlayerState *state, u32 id1, u32 id2) {
         state_remove_fruit(state, id1);
         state_remove_fruit(state, id2);
 
-        state->score += STATE_FINAL_MERGE_SCORE;
+        state_add_score(state, STATE_FINAL_MERGE_SCORE);
         state_wake_around(state, pos, fruit_radius(mergedType));
 
         if (state->mergeEventsCount < STATE_MERGE_EVENT_MAX) {
@@ -171,7 +176,7 @@ static void state_merge_fruit(PlayerState *state, u32 id1, u32 id2) {
 
     state_wake_around(state, pos, survivor->r);
 
-    state->score += state_merge_score(nextType);
+    state_add_score(state, state_merge_score(nextType));
 
     if (state->mergeEventsCount < STATE_MERGE_EVENT_MAX) {
         state->mergeEvents[state->mergeEventsCount++] = (MergeEvent){pos, nextType, false};
@@ -188,6 +193,7 @@ bool state_init(PlayerState *state) {
     state->fruitsCount = 0;
     state->score = 0;
     state->scoreShown = 0.0f;
+    state->scorePulseTime = 0.0f;
     state->mergeEventsCount = 0;
 
     return state_allocate(state, STATE_FRUIT_LIST_DEFAULT_SIZE);

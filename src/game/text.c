@@ -8,7 +8,7 @@
 #define TEXT_CACHE_KEY_SIZE 96
 
 enum {
-    TEXT_CACHE_COUNT = 8,
+    TEXT_CACHE_COUNT = 16,
 };
 
 static const char *TEXT_FONT_CANDIDATES[] = {
@@ -169,6 +169,25 @@ void text_draw_colored(SDL_Renderer *renderer, const char *text, f32 x, f32 y, f
 
     SDL_FRect dest = {x, y, entry->width, entry->height};
     SDL_RenderTexture(renderer, entry->texture, NULL, &dest);
+}
+
+f32 text_measure(const char *text, f32 size) {
+    if (text_font == NULL || text == NULL) {
+        return 0.0f;
+    }
+
+    if (!TTF_SetFontSize(text_font, size)) {
+        return 0.0f;
+    }
+
+    int width = 0;
+    int height = 0;
+
+    if (!TTF_GetStringSize(text_font, text, strlen(text), &width, &height)) {
+        return 0.0f;
+    }
+
+    return (f32)width;
 }
 
 void text_draw_centered_colored(SDL_Renderer *renderer, const char *text, f32 centerX, f32 y, f32 size, rgba color) {
