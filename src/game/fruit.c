@@ -1,19 +1,19 @@
 #include "game/fruit.h"
 #include <stdlib.h>
 
-#define FRUIT_RANDOM_TYPE_COUNT 5
+#define FRUIT_RANDOM_TYPE_COUNT 3
 
 static u32 fruit_next_id = 0;
 
 const FruitInfo FRUITS_INFOS[FRUIT_TYPE_COUNT] = {
-    { "Grape",       20.0f, RGBA_PURPLE },
-    { "Strawberry",  25.0f, RGBA_RED },
-    { "Lemon",       31.0f, RGBA_YELLOW },
-    { "Apple",       38.0f, RGBA_RED },
-    { "Orange",      47.0f, RGBA_ORANGE },
-    { "Peach",       72.0f, RGBA_PINK },
-    { "Melon",       89.0f, RGBA_GREEN },
-    { "Watermelon", 110.0f, RGBA_DARK_GREEN },
+    { "Grape",       24.0f, RGBA_PURPLE },
+    { "Strawberry",  30.0f, RGBA_RED },
+    { "Lemon",       37.0f, RGBA_YELLOW },
+    { "Apple",       45.0f, RGBA_RED },
+    { "Orange",      55.0f, RGBA_ORANGE },
+    { "Peach",       85.0f, RGBA_PINK },
+    { "Melon",      105.0f, RGBA_GREEN },
+    { "Watermelon", 130.0f, RGBA_DARK_GREEN },
 };
 
 _Static_assert(sizeof(FRUITS_INFOS) / sizeof(FRUITS_INFOS[0]) == FRUIT_TYPE_COUNT,
