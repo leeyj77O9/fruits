@@ -6,20 +6,25 @@
 #include <stddef.h>
 #include <stdio.h>
 
-static const f32 SCORE_CENTER_Y = 400.0f;
-static const f32 SCORE_MAX_SIZE = 190.0f;
-static const f32 SCORE_FIT_WIDTH = 800.0f;
-static const rgba SCORE_COLOR = {214, 214, 214, 255};
 static const rgba TEXT_COLOR = {28, 28, 28, 255};
 static const rgba LABEL_COLOR = {70, 70, 70, 255};
+static const rgba NEXT_LABEL_COLOR = {158, 158, 158, 255};
+
+static const f32 SCORE_X = 22.0f;
+static const f32 SCORE_LABEL_Y = 12.0f;
+static const f32 SCORE_LABEL_SIZE = 12.0f;
+static const f32 SCORE_VALUE_Y = 26.0f;
+static const f32 SCORE_VALUE_SIZE = 34.0f;
+static const f32 SCORE_VALUE_SMALL_SIZE = 26.0f;
 static const f32 CIRCLE_PADDING = 1.0f;
 static const Uint8 SPRITE_ALPHA_THRESHOLD = 8;
 
-static const f32 NEXT_CENTER_X = 566.0f;
-static const f32 NEXT_CENTER_Y = 36.0f;
-static const f32 NEXT_MAX_SIZE = 34.0f;
-static const f32 NEXT_LABEL_Y = 4.0f;
-static const f32 NEXT_LABEL_SIZE = 11.0f;
+static const f32 NEXT_CENTER_X = 552.0f;
+static const f32 NEXT_CENTER_Y = 64.0f;
+static const f32 NEXT_MAX_SIZE = 70.0f;
+static const f32 NEXT_LABEL_Y = 8.0f;
+static const f32 NEXT_LABEL_SIZE = 18.0f;
+static const Uint8 NEXT_ALPHA = 160;
 
 enum {
     CIRCLE_SAMPLES = 8,
@@ -313,13 +318,10 @@ void renderer_quit(void) {
 static void renderer_draw_score(SDL_Renderer *renderer, u64 score) {
     char text[32];
     int digits = snprintf(text, sizeof(text), "%llu", (unsigned long long)score);
-    f32 size = SCORE_FIT_WIDTH / (f32)(digits > 0 ? digits : 1);
+    f32 size = digits > 5 ? SCORE_VALUE_SMALL_SIZE : SCORE_VALUE_SIZE;
 
-    if (size > SCORE_MAX_SIZE) {
-        size = SCORE_MAX_SIZE;
-    }
-
-    text_draw_center_middle_colored(renderer, text, (f32)GAME_WIDTH * 0.5f, SCORE_CENTER_Y, size, SCORE_COLOR);
+    text_draw_colored(renderer, "SCORE", SCORE_X, SCORE_LABEL_Y, SCORE_LABEL_SIZE, LABEL_COLOR);
+    text_draw_colored(renderer, text, SCORE_X, SCORE_VALUE_Y, size, TEXT_COLOR);
 }
 
 static void renderer_draw_fruit(SDL_Renderer *renderer, const Fruit *fruit) {
@@ -419,7 +421,7 @@ void renderer_draw_held(SDL_Renderer *renderer, const Fruit *held) {
 void renderer_draw_next(SDL_Renderer *renderer, FruitType type) {
     const FruitSprite *sprite = &fruitSprites[type];
 
-    text_draw_centered_colored(renderer, "NEXT", NEXT_CENTER_X, NEXT_LABEL_Y, NEXT_LABEL_SIZE, LABEL_COLOR);
+    text_draw_centered_colored(renderer, "NEXT", NEXT_CENTER_X, NEXT_LABEL_Y, NEXT_LABEL_SIZE, NEXT_LABEL_COLOR);
 
     if (sprite->texture == NULL) {
         return;
@@ -443,5 +445,7 @@ void renderer_draw_next(SDL_Renderer *renderer, FruitType type) {
         SDL_SetTextureAlphaMod(sprite->texture, color.a);
     }
 
+    SDL_SetTextureAlphaMod(sprite->texture, NEXT_ALPHA);
     SDL_RenderTexture(renderer, sprite->texture, NULL, &dest);
+    SDL_SetTextureAlphaMod(sprite->texture, 255);
 }

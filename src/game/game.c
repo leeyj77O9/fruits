@@ -391,8 +391,8 @@ void game_draw(const Game *game, SDL_Renderer *renderer) {
     renderer_draw_guide(renderer, game->overTime >= GAME_OVER_WARN_TIME);
 
     if (!game->gameOver) {
-        renderer_draw_held(renderer, held);
         renderer_draw_next(renderer, game->nextType);
+        renderer_draw_held(renderer, held);
     }
 
     if (game->gameOver) {
